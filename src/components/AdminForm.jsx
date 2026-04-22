@@ -56,15 +56,53 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
   return (
     <div style={{ minHeight: '100vh', background: '#020617', color: '#e2e8f0', fontFamily: "'Outfit', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+      <style>{`
+        @media (max-width: 768px) {
+          .admin-header {
+            padding: 0 16px !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            height: auto !important;
+            padding-top: 16px !important;
+            padding-bottom: 16px !important;
+          }
+          .admin-header-buttons {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .admin-tabs {
+            flex-direction: column !important;
+          }
+          .grid-2col {
+            grid-template-columns: 1fr !important;
+          }
+          .grid-3col {
+            grid-template-columns: 1fr !important;
+          }
+          .service-grid {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .review-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .admin-main {
+            padding: 16px !important;
+          }
+          .admin-title {
+            font-size: 24px !important;
+          }
+        }
+      `}</style>
 
       {/* Header */}
-      <div style={{ background: '#0f172a', borderBottom: '1px solid #1e293b', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+      <div style={{ background: '#0f172a', borderBottom: '1px solid #1e293b', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }} className="admin-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>⚡</div>
           <span style={{ fontWeight: 700, fontSize: 18, color: '#f1f5f9' }}>DemoBuilder</span>
           <span style={{ fontSize: 12, color: '#64748b', marginLeft: 4 }}>by Giks Studio</span>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10 }} className="admin-header-buttons">
           <button onClick={onBulk} style={{ background: 'linear-gradient(135deg, #f97316, #ef4444)', border: 'none', borderRadius: 8, padding: '10px 20px', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
             ⚡ Bulk Create
           </button>
@@ -74,12 +112,12 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
         </div>
       </div>
 
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 24px' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9', margin: '0 0 8px' }}>Business Details</h1>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 24px' }} className="admin-main">
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9', margin: '0 0 8px' }} className="admin-title">Business Details</h1>
         <div style={{ marginBottom: 28, color: '#94a3b8', fontSize: 14 }}>Fill in the details → generate a shareable demo link → send via WhatsApp.</div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, background: '#0f172a', padding: 8, borderRadius: 10, border: '1px solid #1e293b', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, background: '#0f172a', padding: 8, borderRadius: 10, border: '1px solid #1e293b', flexWrap: 'wrap' }} className="admin-tabs">
           {tabs.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               flex: 1, minWidth: 100, padding: '12px 10px', borderRadius: 10, border: '1px solid transparent', cursor: 'pointer', fontFamily: 'inherit',
@@ -100,7 +138,7 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
             <div style={card}>
               <div style={cardTitle}>Business Identity</div>
               <div style={{ display: 'grid', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="grid-2col">
                   <div><label style={lbl}>Business Name *</label><input style={inp} value={business.name} onChange={e => u('name', e.target.value)} placeholder="e.g. Apex Salon & Spa" /></div>
                   <div><label style={lbl}>Category *</label>
                     <select style={inp} value={business.category} onChange={e => u('category', e.target.value)}>
@@ -115,11 +153,11 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
             <div style={card}>
               <div style={cardTitle}>Contact & Location</div>
               <div style={{ display: 'grid', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="grid-2col">
                   <div><label style={lbl}>Phone *</label><input style={inp} value={business.phone} onChange={e => u('phone', e.target.value)} placeholder="+254 712 345 678" /></div>
                   <div><label style={lbl}>WhatsApp (digits only) *</label><input style={inp} value={business.whatsapp} onChange={e => u('whatsapp', e.target.value)} placeholder="254712345678" /></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="grid-2col">
                   <div><label style={lbl}>Email</label><input style={inp} value={business.email} onChange={e => u('email', e.target.value)} /></div>
                   <div><label style={lbl}>Address</label><input style={inp} value={business.address} onChange={e => u('address', e.target.value)} /></div>
                 </div>
@@ -137,7 +175,7 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
             </div>
             <div style={card}>
               <div style={cardTitle}>Social Media</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="grid-2col">
                 <div><label style={lbl}>Facebook URL</label><input style={inp} value={business.facebookUrl} onChange={e => u('facebookUrl', e.target.value)} placeholder="https://facebook.com/yourbusiness" /></div>
                 <div><label style={lbl}>Instagram URL</label><input style={inp} value={business.instagramUrl} onChange={e => u('instagramUrl', e.target.value)} placeholder="https://instagram.com/yourbusiness" /></div>
               </div>
@@ -165,7 +203,7 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Service {i + 1}</span>
                     <button onClick={() => removeItem('services', i)} style={{ background: '#7f1d1d', border: 'none', borderRadius: 6, padding: '4px 10px', color: '#fca5a5', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Remove</button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 140px', gap: 10, marginBottom: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 140px', gap: 10, marginBottom: 10 }} className="service-grid">
                     <div><label style={lbl}>Icon</label><input style={{ ...inp, textAlign: 'center', fontSize: 20 }} value={svc.icon} onChange={e => updArr('services', i, 'icon', e.target.value)} /></div>
                     <div><label style={lbl}>Name</label><input style={inp} value={svc.name} onChange={e => updArr('services', i, 'name', e.target.value)} /></div>
                     <div><label style={lbl}>Price (KES)</label><input style={inp} value={svc.price} onChange={e => updArr('services', i, 'price', e.target.value)} /></div>
@@ -189,7 +227,7 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Review {i + 1}</span>
                     <button onClick={() => removeItem('reviews', i)} style={{ background: '#7f1d1d', border: 'none', borderRadius: 6, padding: '4px 10px', color: '#fca5a5', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Remove</button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 10, marginBottom: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 10, marginBottom: 10 }} className="review-grid">
                     <div><label style={lbl}>Name</label><input style={inp} value={rev.name} onChange={e => updArr('reviews', i, 'name', e.target.value)} /></div>
                     <div><label style={lbl}>Rating</label>
                       <select style={inp} value={rev.rating} onChange={e => updArr('reviews', i, 'rating', Number(e.target.value))}>

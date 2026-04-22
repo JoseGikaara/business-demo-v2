@@ -51,6 +51,7 @@ export default function Navbar({ activeView, onViewChange }) {
   const navStyle = {
     display: 'flex',
     gap: '8px',
+    flexWrap: 'wrap',
   };
 
   const getButtonStyle = (isActive, color) => ({
@@ -64,24 +65,47 @@ export default function Navbar({ activeView, onViewChange }) {
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 0.2s',
+    whiteSpace: 'nowrap',
   });
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} className="navbar-container">
+      <style>{`
+        @media (max-width: 768px) {
+          .navbar-container {
+            padding: 0 16px !important;
+            height: 56px !important;
+          }
+          .logo-text {
+            font-size: 16px !important;
+          }
+          .logo-subtext {
+            display: none !important;
+          }
+          .nav-buttons {
+            gap: 4px !important;
+          }
+          .nav-button {
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+          }
+        }
+      `}</style>
       {/* Logo */}
       <div style={logoStyle}>
         <div style={logoBadgeStyle}>⚡</div>
-        <span style={logoTextStyle}>DemoBuilder</span>
-        <span style={logoSubtextStyle}>by Giks Studio</span>
+        <span style={logoTextStyle} className="logo-text">DemoBuilder</span>
+        <span style={logoSubtextStyle} className="logo-subtext">by Giks Studio</span>
       </div>
 
       {/* Navigation */}
-      <div style={navStyle}>
+      <div style={navStyle} className="nav-buttons">
         {views.map((view) => (
           <button
             key={view.id}
             onClick={() => onViewChange(view.id)}
             style={getButtonStyle(activeView === view.id, view.color)}
+            className="nav-button"
             onMouseOver={(e) => {
               if (activeView !== view.id) {
                 e.target.style.borderColor = view.color;
