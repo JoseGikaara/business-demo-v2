@@ -81,7 +81,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
   }
 
   const renderStats = () => (
-    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'16px', marginBottom:'24px'}}>
+    <div className="db-stats-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'16px', marginBottom:'24px'}}>
       {[
         { label:'Total Customers', value:'142', icon:'👥', color:'#0ea5e9' },
         { label:'Monthly Revenue', value:'KES 92,000', icon:'💰', color:'#22c55e' },
@@ -153,7 +153,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
         onChange={(e) => setCustomerSearch(e.target.value)}
         style={{width:'100%', padding:'12px 16px', background:'#0f172a', border:'1px solid #1e293b', borderRadius:'8px', color:'#fff', fontSize:'14px', marginBottom:'20px', boxSizing:'border-box'}}
       />
-      <div style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', overflow:'hidden'}}>
+      <div className="db-table" style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', overflow:'hidden'}}>
         <table style={{width:'100%', borderCollapse:'collapse'}}>
           <thead>
             <tr style={{background:'#020617'}}>
@@ -195,7 +195,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
       </div>
       <div style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', padding:'24px', marginBottom:'24px'}}>
         <h3 style={{color:'#fff', margin:'0 0 16px 0'}}>Tier Rules</h3>
-        <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px'}}>
+        <div className="db-stats-grid" style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px'}}>
           {Object.entries({ Bronze:'0–199 pts', Silver:'200–399 pts', Gold:'400–699 pts', Platinum:'700+ pts' }).map(([tier, range]) => (
             <div key={tier} style={{background:'#020617', borderRadius:'8px', padding:'16px', textAlign:'center'}}>
               <div style={{width:'40px', height:'40px', borderRadius:'50%', background:TIER_COLOR[tier], margin:'0 auto 8px'}}/>
@@ -253,7 +253,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
           ))}
         </div>
       </div>
-      <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'24px'}}>
+      <div className="db-three-col" style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'24px'}}>
         {[
           { tier:'Silver', price:'KES 2,000/month', perks:['10% off all services', 'Priority booking'] },
           { tier:'Gold', price:'KES 3,000/month', perks:['20% off all services', 'Priority booking', 'Birthday gift'] },
@@ -280,7 +280,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
         <h3 style={{color:'#fff', margin:'0 0 12px 0'}}>Referrals = Free New Customers</h3>
         <p style={{color:'#94a3b8', margin:0}}>Your happy customers bring new ones. Every customer gets a unique referral code. When their friend books, both get a reward automatically.</p>
       </div>
-      <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'16px', marginBottom:'24px'}}>
+      <div className="db-stats-grid" style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'16px', marginBottom:'24px'}}>
         {[
           { label:'Total Referrals', value:'14' },
           { label:'This Month', value:'5' },
@@ -293,7 +293,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
           </div>
         ))}
       </div>
-      <div style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', padding:'24px', marginBottom:'24px'}}>
+      <div className="db-table" style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', padding:'24px', marginBottom:'24px'}}>
         <table style={{width:'100%', borderCollapse:'collapse'}}>
           <thead>
             <tr style={{background:'#020617'}}>
@@ -418,13 +418,13 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
         <h2 style={{color:'#fff', fontSize:'36px', margin:'0 0 12px 0'}}>Turn Your Website Into a Customer Machine</h2>
         <p style={{color:'#94a3b8', fontSize:'18px', maxWidth:'600px', margin:'0 auto'}}>Everything you just saw — loyalty points, memberships, referrals, broadcast messages — is available for your business today.</p>
       </div>
-      <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px', marginBottom:'32px'}}>
+      <div className="db-three-col" style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px', marginBottom:'32px'}}>
         {[
           { name:'Starter', price:'KES 15,000', period:'one-time payment', badge:null, features:['Website','WhatsApp button','Booking form','Google Maps embed','Gallery','FAQ section','Mobile responsive','1 year hosting'] },
           { name:'Growth', price:'KES 20,000', period:'one-time payment', badge:'Most Popular', features:['Everything in Starter','Customer CRM','Loyalty points system','Broadcast messaging','Referral tracking','Customer profiles','Monthly report'] },
           { name:'Pro', price:'KES 25,000', period:'one-time payment', badge:'Best Value', features:['Everything in Growth','Membership system','Priority support','Custom domain included','Staff accounts','Advanced analytics','Free updates for 1 year'] },
         ].map(plan => (
-          <div key={plan.name} style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'16px', padding:'28px', display:'flex', flexDirection:'column'}}>
+          <div className="db-inner-pad" key={plan.name} style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'16px', padding:'28px', display:'flex', flexDirection:'column'}}>
             {plan.badge && <div style={{background:plan.badge==='Most Popular'?'#22c55e':'#a78bfa', color:'#fff', padding:'4px 12px', borderRadius:'12px', fontSize:'12px', fontWeight:'600', alignSelf:'flex-start', marginBottom:'12px'}}>{plan.badge}</div>}
             <h3 style={{color:'#fff', fontSize:'24px', margin:'0 0 8px 0'}}>{plan.name}</h3>
             <div style={{marginBottom:'20px'}}>
@@ -474,12 +474,29 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
         .db-sidebar { width: 220px; background: #0f172a; border-right: 1px solid #1e293b; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; z-index: 50; display: flex; flex-direction: column; }
         .db-content { margin-left: 220px; flex: 1; min-height: 100vh; padding-bottom: 32px; }
         .db-bottom-nav { display: none; }
+
+        .db-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .db-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .db-three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .db-table { width: 100%; overflow-x: auto; display: block; }
+        .db-inner-pad { padding: 28px; }
+
         @media (max-width: 768px) {
           .db-sidebar { display: none !important; }
-          .db-content { margin-left: 0 !important; padding-bottom: 90px !important; }
+          .db-content { margin-left: 0 !important; padding-bottom: 100px !important; }
           .db-bottom-nav { display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(2,6,23,0.97); border-top: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); padding: 6px 0 max(6px, env(safe-area-inset-bottom)); justify-content: space-around; align-items: center; }
           .db-header { padding: 0 16px !important; }
           .db-header h2 { font-size: 15px !important; }
+          .db-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+          .db-two-col { grid-template-columns: 1fr !important; }
+          .db-three-col { grid-template-columns: 1fr !important; }
+          .db-inner-pad { padding: 16px !important; }
+          .db-hide-mobile { display: none !important; }
+          .db-table { font-size: 13px !important; }
+        }
+
+        @media (max-width: 400px) {
+          .db-stats-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
       <div className="db-header" style={{height:'64px', background:'#0f172a', borderBottom:'1px solid #1e293b', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 24px', position:'sticky', top:0, zIndex:100}}>
