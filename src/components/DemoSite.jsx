@@ -945,7 +945,7 @@ function SectionHeader({ label, title, sub, primary, extra }) {
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
-export default function DemoSite({ business, onBack, isSharedView = false, isDemo = false }) {
+export default function DemoSite({ business, onBack, isSharedView = false, isDemo = false, onDashboard }) {
   const primary = business.primaryColor || '#0ea5e9'
   const accent = business.accentColor || '#06b6d4'
   const stock = getStock(business.category)
@@ -989,6 +989,21 @@ export default function DemoSite({ business, onBack, isSharedView = false, isDem
       <WhyWebsite business={business} primary={primary} accent={accent} />
       <Contact business={business} primary={primary} accent={accent} />
       <Footer business={business} primary={primary} />
+      {onDashboard && (
+  <button
+    onClick={onDashboard}
+    style={{
+      position: 'fixed', bottom: 100, right: 28, zIndex: 1000,
+      background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+      border: 'none', borderRadius: 50, padding: '14px 20px',
+      color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+      fontFamily: 'inherit', boxShadow: '0 4px 20px rgba(34,197,94,0.5)',
+      display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
+    }}
+  >
+    📊 Business Dashboard
+  </button>
+)}
       <WhatsAppFAB number={business.whatsapp} name={business.name} />
     </div>
   )

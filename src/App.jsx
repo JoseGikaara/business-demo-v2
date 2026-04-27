@@ -4,6 +4,7 @@ import AdminForm from './components/AdminForm'
 import DemoSite from './components/DemoSite'
 import BulkGenerator from './components/BulkGenerator'
 import LeadManager from './components/LeadManager'
+import BusinessDashboard from './components/BusinessDashboard'
 
 function getBusinessFromURL() {
   try {
@@ -66,6 +67,7 @@ export default function App() {
   const isDemo = window.location.search.length > 0
   const [view, setView] = useState(urlBusiness ? 'demo' : 'admin')
   const [business, setBusiness] = useState(urlBusiness || defaultBusiness)
+  const [dashBusiness, setDashBusiness] = useState(urlBusiness || defaultBusiness)
 
   // If viewing shared link, skip navbar and just show demo
   if (isDemo && urlBusiness) {
@@ -81,9 +83,10 @@ export default function App() {
       {/* Content */}
       <div>
         {view === 'admin' && <AdminForm business={business} onChange={setBusiness} onPreview={() => setView('demo')} onBulk={() => setView('bulk')} />}
-        {view === 'demo' && <DemoSite business={business} onBack={() => setView('admin')} isSharedView={false} isDemo={false} />}
+        {view === 'demo' && <DemoSite business={business} onBack={() => setView('admin')} isSharedView={false} isDemo={false} onDashboard={() => setView('dashboard')} />}
         {view === 'bulk' && <BulkGenerator onBack={() => setView('admin')} />}
         {view === 'leads' && <LeadManager onBack={() => setView('admin')} />}
+        {view === 'dashboard' && <BusinessDashboard business={dashBusiness} onBack={() => setView('demo')} onEditSite={() => setView('admin')} />}
       </div>
     </div>
   )
