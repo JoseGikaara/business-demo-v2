@@ -62,6 +62,22 @@ const defaultBusiness = {
   instagramUrl: '',
 }
 
+function SharedDemoWrapper({ business }) {
+  const [sharedView, setSharedView] = useState('site')
+  if (sharedView === 'dashboard') {
+    return <BusinessDashboard business={business} onBack={() => setSharedView('site')} onEditSite={null} isClientView={true} />
+  }
+  return (
+    <DemoSite
+      business={business}
+      onBack={null}
+      isSharedView={true}
+      isDemo={true}
+      onDashboard={() => setSharedView('dashboard')}
+    />
+  )
+}
+
 export default function App() {
   const urlBusiness = getBusinessFromURL()
   const isDemo = window.location.search.length > 0
@@ -71,7 +87,7 @@ export default function App() {
 
   // If viewing shared link, skip navbar and just show demo
   if (isDemo && urlBusiness) {
-    return <DemoSite business={business} onBack={() => setView('admin')} isSharedView={true} isDemo={true} />
+    return <SharedDemoWrapper business={business} />
   }
 
   // Render navbar + content

@@ -38,7 +38,7 @@ const REVENUE = [38000,42000,39000,51000,48000,62000,58000,67000,71000,69000,840
 
 const TIER_COLOR = { Bronze:'#cd7f32', Silver:'#94a3b8', Gold:'#fbbf24', Platinum:'#a78bfa' }
 
-export default function BusinessDashboard({ business, onBack, onEditSite }) {
+export default function BusinessDashboard({ business, onBack, onEditSite, isClientView = false }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
@@ -391,9 +391,11 @@ export default function BusinessDashboard({ business, onBack, onEditSite }) {
         ))}
       </div>
       <div style={{display:'flex', gap:'12px', marginBottom:'16px'}}>
-        <button onClick={showToast} style={{flex:1, padding:'14px', background:'linear-gradient(135deg, #0ea5e9, #06b6d4)', border:'none', borderRadius:'12px', color:'#fff', fontSize:'15px', fontWeight:'600', cursor:'pointer'}}>
-          Save Changes
-        </button>
+        {!isClientView && (
+          <button onClick={showToast} style={{flex:1, padding:'14px', background:'linear-gradient(135deg, #0ea5e9, #06b6d4)', border:'none', borderRadius:'12px', color:'#fff', fontSize:'15px', fontWeight:'600', cursor:'pointer'}}>
+            Save Changes
+          </button>
+        )}
         <button onClick={onEditSite} style={{flex:1, padding:'14px', background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', color:'#fff', fontSize:'15px', fontWeight:'600', cursor:'pointer'}}>
           View Live Site
         </button>
@@ -401,9 +403,11 @@ export default function BusinessDashboard({ business, onBack, onEditSite }) {
           {copied ? '✓ Copied!' : 'Share Demo Link'}
         </button>
       </div>
-      <button onClick={onEditSite} style={{width:'100%', padding:'14px', background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', color:'#fff', fontSize:'15px', fontWeight:'600', cursor:'pointer'}}>
-        Open Website Editor
-      </button>
+      {!isClientView && (
+        <button onClick={onEditSite} style={{width:'100%', padding:'14px', background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', color:'#fff', fontSize:'15px', fontWeight:'600', cursor:'pointer'}}>
+          Open Website Editor
+        </button>
+      )}
       {toast && <div style={{position:'fixed', bottom:'24px', right:'24px', background:'#22c55e', color:'#fff', padding:'12px 24px', borderRadius:'8px', fontWeight:'500'}}>✓ Saved!</div>}
     </div>
   )
@@ -472,9 +476,11 @@ export default function BusinessDashboard({ business, onBack, onEditSite }) {
           </button>
           <span style={{color:'#fff', fontSize:'20px', fontWeight:'600'}}>{business?.name || 'Business Dashboard'}</span>
         </div>
-        <button onClick={onBack} style={{padding:'8px 16px', background:'#1e293b', border:'none', borderRadius:'8px', color:'#fff', cursor:'pointer', fontSize:'14px'}}>
-          ← Back
-        </button>
+        {onBack && (
+          <button onClick={onBack} style={{padding:'8px 16px', background:'#1e293b', border:'none', borderRadius:'8px', color:'#fff', cursor:'pointer', fontSize:'14px'}}>
+            ← Back to Site
+          </button>
+        )}
       </div>
       <div style={{display:'flex', minHeight:'calc(100vh - 64px)'}}>
         <div style={{width:'220px', background:'#0f172a', borderRight:'1px solid #1e293b', padding:'16px 0', flexShrink:0}} className="sidebar">

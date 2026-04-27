@@ -303,54 +303,102 @@ function DemoNavbar({ business, primary }) {
   const links = ['Services', 'Gallery', 'About', 'Reviews', business.showBooking ? 'Book' : null, 'FAQ', 'Contact'].filter(Boolean)
 
   useEffect(() => {
-    const fn = () => { setScrolled(window.scrollY > 40); setMenuOpen(false) }
+    const fn = () => { setScrolled(window.scrollY > 40); if (window.scrollY > 40) setMenuOpen(false) }
     window.addEventListener('scroll', fn)
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  const navBg = scrolled || menuOpen ? 'rgba(2,6,23,0.98)' : 'transparent'
-
   return (
     <>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, background: navBg, backdropFilter: 'blur(20px)', borderBottom: (scrolled || menuOpen) ? '1px solid rgba(255,255,255,0.07)' : 'none', transition: 'background 0.4s, border 0.4s' }}>
-        <div style={{ padding: '0 20px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .demo-desktop-nav { display: none !important; }
+          .demo-mobile-bottom { display: flex !important; }
+          .demo-hamburger { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .demo-desktop-nav { display: flex !important; }
+          .demo-mobile-bottom { display: none !important; }
+          .demo-hamburger { display: none !important; }
+        }
+      `}</style>
+
+      {/* Desktop navbar */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+        background: scrolled ? 'rgba(2,6,23,0.97)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.07)' : 'none',
+        transition: 'all 0.4s',
+      }}>
+        <div style={{ padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 20, color: '#fff', letterSpacing: '-0.02em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 12 }}>
             {business.name}
           </div>
           {/* Desktop links */}
-          <div style={{ display: 'flex', gap: 24, alignItems: 'center', '@media(max-width:768px)': { display: 'none' } }} className="desktop-nav">
+          <div className="demo-desktop-nav" style={{ gap: 24, alignItems: 'center' }}>
             {links.map(l => (
-              <a key={l} href={`#${l.toLowerCase()}`} style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{l}</a>
+              <a key={l} href={`#${l.toLowerCase()}`}
+                style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', transition: 'color 0.2s' }}
+                onMouseEnter={e => e.target.style.color = '#fff'}
+                onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.7)'}>
+                {l}
+              </a>
             ))}
             <a href={`https://wa.me/${business.whatsapp}`} target="_blank" rel="noreferrer"
               style={{ background: primary, borderRadius: 8, padding: '9px 18px', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
               Chat Now
             </a>
           </div>
-          {/* Hamburger */}
-          <button onClick={() => setMenuOpen(o => !o)} className="hamburger"
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, width: 44, height: 44, display: 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, flexDirection: 'column', gap: 5, padding: 12 }}>
-            <div style={{ width: 20, height: 2, background: '#fff', borderRadius: 2, transition: 'all 0.3s', transform: menuOpen ? 'rotate(45deg) translate(5px,5px)' : 'none' }} />
-            <div style={{ width: 20, height: 2, background: '#fff', borderRadius: 2, transition: 'all 0.3s', opacity: menuOpen ? 0 : 1 }} />
-            <div style={{ width: 20, height: 2, background: '#fff', borderRadius: 2, transition: 'all 0.3s', transform: menuOpen ? 'rotate(-45deg) translate(5px,-5px)' : 'none' }} />
+          {/* Hamburger for mobile — opens fullscreen menu */}
+          <button className="demo-hamburger"
+            onClick={() => setMenuOpen(o => !o)}
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexDirection: 'column', gap: 5, padding: '12px', flexShrink: 0 }}>
+            <div style={{ width: 18, height: 2, background: '#fff', borderRadius: 2, transition: 'all 0.3s', transform: menuOpen ? 'rotate(45deg) translate(5px,5px)' : 'none' }} />
+            <div style={{ width: 18, height: 2, background: '#fff', borderRadius: 2, transition: 'all 0.3s', opacity: menuOpen ? 0 : 1 }} />
+            <div style={{ width: 18, height: 2, background: '#fff', borderRadius: 2, transition: 'all 0.3s', transform: menuOpen ? 'rotate(-45deg) translate(5px,-5px)' : 'none' }} />
           </button>
         </div>
-        {/* Mobile menu */}
-        <div style={{ maxHeight: menuOpen ? 500 : 0, overflow: 'hidden', transition: 'max-height 0.4s ease' }} className="mobile-menu">
-          <div style={{ padding: '8px 20px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+
+        {/* Mobile fullscreen dropdown */}
+        <div style={{ maxHeight: menuOpen ? 600 : 0, overflow: 'hidden', transition: 'max-height 0.4s ease', background: 'rgba(2,6,23,0.99)' }}>
+          <div style={{ padding: '8px 20px 100px', display: 'flex', flexDirection: 'column' }}>
             {links.map(l => (
               <a key={l} href={`#${l.toLowerCase()}`} onClick={() => setMenuOpen(false)}
-                style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: 16, fontWeight: 500, padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'block' }}>
+                style={{ color: 'rgba(255,255,255,0.85)', textDecoration: 'none', fontSize: 18, fontWeight: 500, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'block', letterSpacing: '0.02em' }}>
                 {l}
               </a>
             ))}
             <a href={`https://wa.me/${business.whatsapp}`} target="_blank" rel="noreferrer"
-              style={{ background: `linear-gradient(135deg, ${primary}, #06b6d4)`, borderRadius: 10, padding: '14px', color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none', textAlign: 'center', marginTop: 12 }}>
+              style={{ background: `linear-gradient(135deg, ${primary}, #06b6d4)`, borderRadius: 12, padding: '16px', color: '#fff', fontWeight: 700, fontSize: 16, textDecoration: 'none', textAlign: 'center', marginTop: 20, display: 'block' }}>
               💬 Chat on WhatsApp
             </a>
           </div>
         </div>
       </nav>
+
+      {/* Mobile bottom tab bar */}
+      <div className="demo-mobile-bottom"
+        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(2,6,23,0.97)', borderTop: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', padding: '8px 0 max(8px, env(safe-area-inset-bottom))', justifyContent: 'space-around', alignItems: 'center' }}>
+        {[
+          { href: '#services', icon: '🛠️', label: 'Services' },
+          { href: '#gallery', icon: '📸', label: 'Gallery' },
+          { href: `https://wa.me/${business.whatsapp}`, icon: '💬', label: 'WhatsApp', external: true, highlight: true },
+          { href: business.showBooking ? '#book' : '#contact', icon: '📅', label: 'Book' },
+          { href: '#contact', icon: '📍', label: 'Contact' },
+        ].map((tab, i) => (
+          <a key={i}
+            href={tab.href}
+            target={tab.external ? '_blank' : undefined}
+            rel={tab.external ? 'noreferrer' : undefined}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none', flex: 1, padding: '4px 0' }}>
+            <div style={{ width: tab.highlight ? 48 : 32, height: tab.highlight ? 48 : 32, borderRadius: tab.highlight ? '50%' : 8, background: tab.highlight ? `linear-gradient(135deg, #25d366, #128c7e)` : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: tab.highlight ? 22 : 18, boxShadow: tab.highlight ? '0 4px 16px rgba(37,211,102,0.5)' : 'none', marginTop: tab.highlight ? -16 : 0 }}>
+              {tab.icon}
+            </div>
+            <span style={{ fontSize: 10, color: tab.highlight ? '#25d366' : 'rgba(255,255,255,0.5)', fontWeight: tab.highlight ? 700 : 500, letterSpacing: '0.04em' }}>{tab.label}</span>
+          </a>
+        ))}
+      </div>
     </>
   )
 }
