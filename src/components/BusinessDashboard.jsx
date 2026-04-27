@@ -469,11 +469,21 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
   return (
     <div style={{fontFamily:'Outfit, sans-serif', background:'#020617', minHeight:'100vh', color:'#fff'}}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-      <div style={{height:'64px', background:'#0f172a', borderBottom:'1px solid #1e293b', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 24px', position:'sticky', top:0, zIndex:100}}>
+      <style>{`
+        .db-layout { display: flex; min-height: 100vh; }
+        .db-sidebar { width: 220px; background: #0f172a; border-right: 1px solid #1e293b; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; z-index: 50; display: flex; flex-direction: column; }
+        .db-content { margin-left: 220px; flex: 1; min-height: 100vh; padding-bottom: 32px; }
+        .db-bottom-nav { display: none; }
+        @media (max-width: 768px) {
+          .db-sidebar { display: none !important; }
+          .db-content { margin-left: 0 !important; padding-bottom: 90px !important; }
+          .db-bottom-nav { display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(2,6,23,0.97); border-top: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); padding: 6px 0 max(6px, env(safe-area-inset-bottom)); justify-content: space-around; align-items: center; }
+          .db-header { padding: 0 16px !important; }
+          .db-header h2 { font-size: 15px !important; }
+        }
+      `}</style>
+      <div className="db-header" style={{height:'64px', background:'#0f172a', borderBottom:'1px solid #1e293b', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 24px', position:'sticky', top:0, zIndex:100}}>
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{display:'none', background:'none', border:'none', color:'#fff', fontSize:'24px', cursor:'pointer'}} id="hamburger">
-            ☰
-          </button>
           <span style={{color:'#fff', fontSize:'20px', fontWeight:'600'}}>{business?.name || 'Business Dashboard'}</span>
         </div>
         {onBack && (
@@ -482,8 +492,8 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
           </button>
         )}
       </div>
-      <div style={{display:'flex', minHeight:'calc(100vh - 64px)'}}>
-        <div style={{width:'220px', background:'#0f172a', borderRight:'1px solid #1e293b', padding:'16px 0', flexShrink:0}} className="sidebar">
+      <div className="db-layout">
+        <div className="db-sidebar">
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               width:'100%', padding:'12px 20px', background:activeTab===tab.id?'linear-gradient(135deg, #0ea5e9, #06b6d4)':'transparent', border:'none', borderRadius:'8px', color:activeTab===tab.id?'#fff':'#94a3b8', cursor:'pointer', fontSize:'14px', fontWeight:'500', textAlign:'left', display:'flex', alignItems:'center', gap:'10px', marginBottom:'4px'
@@ -492,16 +502,27 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
             </button>
           ))}
         </div>
-        <div style={{flex:1, padding:'24px', overflowY:'auto'}}>
+        <div className="db-content" style={{flex:1, padding:'24px', overflowY:'auto'}}>
           {renderContent()}
         </div>
       </div>
-      <style>{`
-        @media (max-width: 768px) {
-          .sidebar { display: none !important; }
-          #hamburger { display: block !important; }
-        }
-      `}</style>
+      <div className="db-bottom-nav">
+        {[
+          { id:'overview', icon:'📊', label:'Home' },
+          { id:'customers', icon:'👥', label:'Clients' },
+          { id:'loyalty', icon:'⭐', label:'Loyalty' },
+          { id:'membership', icon:'💳', label:'Members' },
+          { id:'referrals', icon:'🔗', label:'Referrals' },
+          { id:'broadcast', icon:'📢', label:'Broadcast' },
+          { id:'upgrade', icon:'🚀', label:'Upgrade' },
+        ].map(tab => (
+          <div key={tab.id} onClick={() => setActiveTab(tab.id)} style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'2px', cursor:'pointer', padding:'4px 0', position:'relative'}}>
+            {activeTab === tab.id && <div style={{position:'absolute', top:0, width:4, height:4, borderRadius:'50%', background:'#0ea5e9'}} />}
+            <div style={{fontSize:20}}>{tab.icon}</div>
+            <span style={{fontSize:9, textTransform:'uppercase', letterSpacing:'0.04em', color:activeTab === tab.id?'#0ea5e9':'rgba(255,255,255,0.4)', fontWeight:activeTab === tab.id?600:400}}>{tab.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
