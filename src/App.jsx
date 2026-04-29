@@ -8,7 +8,10 @@ import BusinessDashboard from './components/BusinessDashboard'
 
 function getBusinessFromURL() {
   try {
-    const params = new URLSearchParams(window.location.search)
+    // Read from hash-based params (e.g., #d=...) instead of query params
+    // This works better on mobile (especially WhatsApp) where query params may be stripped
+    const hash = window.location.hash.slice(1) // Remove the leading '#'
+    const params = new URLSearchParams(hash)
     const data = params.get('d')
     if (!data) return null
     const decoded = JSON.parse(decodeURIComponent(atob(data)))
@@ -20,8 +23,10 @@ function getBusinessFromURL() {
 }
 
 export function buildShareableURL(business) {
+  // Use hash-based params (#d=...) instead of query params (?d=...)
+  // This is more reliable on mobile browsers and WhatsApp
   const encoded = btoa(encodeURIComponent(JSON.stringify(business)))
-  return `${window.location.origin}${window.location.pathname}?d=${encoded}`
+  return `${window.location.origin}${window.location.pathname}#d=${encoded}`
 }
 
 const defaultBusiness = {
@@ -80,7 +85,7 @@ function SharedDemoWrapper({ business }) {
 
 export default function App() {
   const urlBusiness = getBusinessFromURL()
-  const isDemo = window.location.search.length > 0
+  const isDemo = window.location.hash.length > 1 // Check hash instead of search
   const [view, setView] = useState(urlBusiness ? 'demo' : 'admin')
   const [business, setBusiness] = useState(urlBusiness || defaultBusiness)
   const [dashBusiness, setDashBusiness] = useState(urlBusiness || defaultBusiness)
