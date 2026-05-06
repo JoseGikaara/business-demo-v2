@@ -1,506 +1,414 @@
-import React, { useState, useEffect } from 'react';
-import { buildWhatsAppLink, buildWhatsAppMessage, copyMessageToClipboard } from '../lib/whatsapp';
-import { saveDemoSite, loadDemoSites, updateSiteStatus, deleteSite, bulkDeleteInactive } from '../lib/demoSites';
+import { useState, useEffect } from 'react'
+import { buildShareableURL } from '../App'
+import { supabase } from '../utils/supabase'
 
 async function shortenURL(longUrl) {
   try {
-    const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-    if (!res.ok) throw new Error('Failed');
-    return (await res.text()).trim();
-  } catch { return null; }
+    const r = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
+    return r.ok ? (await r.text()).trim() : null
+  } catch { return null }
 }
 
-const LeadManager = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState('leads');
-  const [leads, setLeads] = useState([]);
-  const [team, setTeam] = useState([]);
-  const [newTeamMember, setNewTeamMember] = useState('');
-  const [bulkInput, setBulkInput] = useState('');
-  const [selectedLeads, setSelectedLeads] = useState(new Set());
-  const [assignToDropdown, setAssignToDropdown] = useState('');
-  const [bulkCount, setBulkCount] = useState(0);
-  const [shorteningLeadId, setShorteningLeadId] = useState(null);
-  const [bulkShorteningProgress, setBulkShorteningProgress] = useState(null);
-  const [copiedId, setCopiedId] = useState(null);
-  const [openMessageId, setOpenMessageId] = useState(null);
+const CATEGORY_DEFAULTS = {
+  salon: { tagline: 'Where Style Meets Luxury', hours: 'Mon–Sat: 8AM–8PM | Sun: 10AM–6PM', about: "Nairobi's premier destination for hair, nails, and wellness.", primaryColor: '#0ea5e9', accentColor: '#06b6d4', showBooking: true, services: [{ name: 'Hair Styling', price: '1,500', desc: 'Cut, blow-dry, and styling', icon: '✂️' }, { name: 'Manicure & Pedicure', price: '2,000', desc: 'Luxury nail care', icon: '💅' }, { name: 'Facial Treatment', price: '3,500', desc: 'Rejuvenating skin therapy', icon: '✨' }, { name: 'Massage Therapy', price: '4,000', desc: 'Full body relaxation', icon: '🫧' }] },
+  restaurant: { tagline: 'Flavors That Delight', hours: 'Mon–Sun: 11AM–10PM', about: 'Authentic cuisine with a modern twist.', primaryColor: '#dc2626', accentColor: '#ef4444', showBooking: true, services: [{ name: 'Lunch Special', price: '1,000', desc: 'Daily changing lunch menu', icon: '🍽️' }, { name: 'Dinner for Two', price: '3,500', desc: 'Romantic dinner experience', icon: '🍷' }, { name: 'Family Platter', price: '5,000', desc: 'Large sharing platter', icon: '👨‍👩‍👧‍👦' }, { name: 'Catering', price: 'Contact', desc: 'Event catering services', icon: '🎉' }] },
+  plumber: { tagline: 'Reliable Plumbing Solutions', hours: 'Mon–Sat: 8AM–6PM | Emergency: 24/7', about: 'Professional plumbing for residential and commercial.', primaryColor: '#059669', accentColor: '#10b981', showBooking: false, services: [{ name: 'Pipe Repair', price: '2,000', desc: 'Fix leaking pipes', icon: '🔧' }, { name: 'Drain Cleaning', price: '1,500', desc: 'Clear clogged drains', icon: '🚰' }, { name: 'Installation', price: '3,000', desc: 'New plumbing fixtures', icon: '🛠️' }, { name: 'Emergency', price: '4,000', desc: '24/7 emergency repairs', icon: '🚨' }] },
+  electrician: { tagline: 'Powering Your Home', hours: 'Mon–Sat: 8AM–6PM | Emergency: 24/7', about: 'Certified electrical services for all needs.', primaryColor: '#d97706', accentColor: '#f59e0b', showBooking: false, services: [{ name: 'Wiring', price: '5,000', desc: 'Electrical wiring setup', icon: '⚡' }, { name: 'Outlet Repair', price: '1,000', desc: 'Fix faulty outlets', icon: '🔌' }, { name: 'Lighting', price: '2,500', desc: 'New lighting fixtures', icon: '💡' }, { name: 'Emergency', price: '3,000', desc: '24/7 electrical fixes', icon: '🚨' }] },
+  gym: { tagline: 'Build Your Strength', hours: 'Mon–Fri: 5AM–10PM | Sat–Sun: 7AM–8PM', about: 'State-of-the-art fitness facility.', primaryColor: '#7c3aed', accentColor: '#8b5cf6', showBooking: true, services: [{ name: 'Personal Training', price: '3,000', desc: 'One-on-one sessions', icon: '🏋️' }, { name: 'Group Classes', price: '1,500', desc: 'Yoga, HIIT, strength', icon: '🤸' }, { name: 'Membership', price: '5,000', desc: 'Monthly unlimited access', icon: '💳' }, { name: 'Nutrition', price: '2,000', desc: 'Diet planning', icon: '🥗' }] },
+  clinic: { tagline: 'Caring for Your Health', hours: 'Mon–Fri: 8AM–6PM | Sat: 9AM–2PM', about: 'Comprehensive healthcare with experienced doctors.', primaryColor: '#be185d', accentColor: '#db2777', showBooking: true, services: [{ name: 'Consultation', price: '1,500', desc: 'General health check', icon: '👨‍⚕️' }, { name: 'Specialist', price: '3,000', desc: 'Specialist consultation', icon: '🩺' }, { name: 'Lab Tests', price: '2,000', desc: 'Diagnostics', icon: '🧪' }, { name: 'Vaccines', price: '1,000', desc: 'Routine vaccinations', icon: '💉' }] },
+  cleaning: { tagline: 'Sparkling Clean Spaces', hours: 'Mon–Sat: 7AM–7PM', about: 'Professional cleaning for homes and offices.', primaryColor: '#0d9488', accentColor: '#14b8a6', showBooking: false, services: [{ name: 'House Cleaning', price: '3,000', desc: 'Home deep cleaning', icon: '🧹' }, { name: 'Office Cleaning', price: '2,500', desc: 'Regular office care', icon: '🏢' }, { name: 'Carpet Cleaning', price: '1,500', desc: 'Deep carpet cleaning', icon: '🧽' }, { name: 'Windows', price: '1,000', desc: 'Streak-free cleaning', icon: '🪟' }] },
+  photography: { tagline: 'Capturing Your Moments', hours: 'Mon–Sat: 9AM–6PM', about: 'Professional photography for all occasions.', primaryColor: '#7c2d12', accentColor: '#ea580c', showBooking: true, services: [{ name: 'Portrait', price: '5,000', desc: 'Professional headshots', icon: '📸' }, { name: 'Events', price: '10,000', desc: 'Wedding & event coverage', icon: '🎉' }, { name: 'Products', price: '3,000', desc: 'Commercial shoots', icon: '📦' }, { name: 'Editing', price: '1,000', desc: 'Post-production', icon: '🖼️' }] },
+  hardware: { tagline: 'Your Home Improvement Store', hours: 'Mon–Sat: 8AM–7PM', about: 'Complete hardware with tools and expert advice.', primaryColor: '#374151', accentColor: '#6b7280', showBooking: false, services: [{ name: 'Tool Rental', price: '500', desc: 'Power tools rental', icon: '🔨' }, { name: 'Consultation', price: 'Free', desc: 'Expert project advice', icon: '🛠️' }, { name: 'Delivery', price: '1,000', desc: 'Home delivery', icon: '🚚' }, { name: 'Installation', price: '2,000', desc: 'Professional help', icon: '⚙️' }] },
+  other: { tagline: 'Quality Service You Can Trust', hours: 'Mon–Fri: 8AM–6PM', about: 'Professional services delivered with excellence.', primaryColor: '#0ea5e9', accentColor: '#06b6d4', showBooking: false, services: [{ name: 'Consultation', price: 'Free', desc: 'Initial assessment', icon: '💬' }, { name: 'Standard Service', price: 'Contact', desc: 'Core service delivery', icon: '⭐' }, { name: 'Premium Package', price: 'Contact', desc: 'Full-service offering', icon: '🏆' }, { name: 'Support', price: 'Included', desc: 'Ongoing support', icon: '🛠️' }] },
+}
 
-  // Site manager state
-  const [sites, setSites] = useState([]);
-  const [sitesLoading, setSitesLoading] = useState(false);
-  const [siteFilter, setSiteFilter] = useState('all');
-  const [deleteProgress, setDeleteProgress] = useState('');
+const GENERIC_REVIEWS = [
+  { name: 'Happy Customer', rating: 5, text: 'Excellent service! Highly recommend.' },
+  { name: 'Satisfied Client', rating: 5, text: 'Professional and reliable. Will use again.' },
+  { name: 'Loyal Patron', rating: 5, text: 'Great experience from start to finish.' },
+]
+const GENERIC_FAQS = [
+  { q: 'Do I need to book in advance?', a: 'We recommend booking at least 24 hours ahead.' },
+  { q: 'What payment methods do you accept?', a: 'M-Pesa, cash, and major cards.' },
+  { q: 'How long do services take?', a: "Duration varies — we'll give you an estimate when booking." },
+  { q: 'Do you offer packages?', a: 'Yes, contact us for custom packages and promotions.' },
+]
 
-  // Filters
-  const [searchName, setSearchName] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterAssigned, setFilterAssigned] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
+function buildBusinessFromLead(lead) {
+  const cat = lead.category || 'other'
+  const defaults = CATEGORY_DEFAULTS[cat] || CATEGORY_DEFAULTS.other
+  return {
+    name: lead.name,
+    tagline: lead.tagline || defaults.tagline,
+    category: cat,
+    phone: lead.phone || '',
+    whatsapp: lead.whatsapp || lead.phone || '',
+    email: lead.email || '',
+    address: lead.address || '',
+    mapSearch: lead.mapSearch || `${lead.name} ${lead.address}`,
+    hours: lead.hours || defaults.hours,
+    about: lead.about || defaults.about,
+    primaryColor: defaults.primaryColor,
+    accentColor: defaults.accentColor,
+    showBooking: defaults.showBooking,
+    services: lead.services || defaults.services,
+    reviews: lead.reviews?.length ? lead.reviews : GENERIC_REVIEWS,
+    faqs: GENERIC_FAQS,
+    galleryImages: [],
+    socialImages: [],
+    facebookUrl: lead.facebookUrl || '',
+    instagramUrl: lead.instagramUrl || '',
+  }
+}
+
+function buildOutreachMessage(lead) {
+  const url = lead.shortUrl || lead.demoUrl || '[URL pending]'
+  const openers = {
+    salon: "imagine a potential client searching *\"best salon near me\"* tonight — your site comes up, they see your work, read 5-star reviews, and book a slot. All while you sleep.",
+    restaurant: "imagine someone hungry nearby searching for a restaurant — they land on your page, see the menu, read reviews, and call to reserve. Done.",
+    clinic: "patients today search before they visit. A professional site with your services and booking builds trust before they walk through your door.",
+    gym: "fitness clients want to see the vibe before they commit. Your demo shows classes, pricing, and reviews — closes them before the first call.",
+    hardware: "contractors and homeowners search for suppliers online. Your site puts your stock, location, and contact front and centre.",
+  }
+  const opener = openers[lead.category] || "customers today search online before they visit anywhere. A professional site means they find you, trust you, and reach out — before your competitor."
+  return `Hi! 👋
+
+I built a *free demo website* for *${lead.name}* — check it out:
+👉 ${url}
+
+Here's the thing: ${opener}
+
+Your demo already includes:
+📅 *Online Booking* — customers book 24/7, no missed calls
+⭐ *Customer Reviews* — show your best reviews upfront
+📢 *Broadcast Messaging* — send promos to your whole customer list
+🎁 *Loyalty & Referrals* — turn one customer into five automatically
+🗺️ *Google Maps* — customers find you and get directions instantly
+📊 *Business Dashboard* — track revenue, bookings & engagement
+
+This is what growing businesses in Nairobi are using right now.
+I can have your real site live in *24 hours*.
+
+Interested? Just reply *YES* 🚀`
+}
+
+const S = {
+  card: { background: '#0f172a', border: '1px solid #334155', borderRadius: 10, padding: 20, marginBottom: 16 },
+  btn: { padding: '8px 16px', background: '#0ea5e9', color: '#020617', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' },
+  btnPurple: { padding: '8px 16px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' },
+  btnGreen: { padding: '8px 16px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' },
+  btnRed: { padding: '8px 16px', background: '#b91c1c', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' },
+  inp: { padding: '8px 12px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, color: '#e2e8f0', fontSize: 13, fontFamily: 'inherit' },
+}
+
+export default function LeadManager({ onBack }) {
+  const [tab, setTab] = useState('leads')
+  const [leads, setLeads] = useState([])
+  const [selected, setSelected] = useState(new Set())
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [building, setBuilding] = useState(false)
+  const [buildProgress, setBuildProgress] = useState(null)
+  const [copiedId, setCopiedId] = useState(null)
+  const [expandedId, setExpandedId] = useState(null)
+
+  // CRM state
+  const [crmLeads, setCrmLeads] = useState([])
+  const [crmSearch, setCrmSearch] = useState('')
+  const [deletingInactive, setDeletingInactive] = useState(false)
 
   useEffect(() => {
-    const savedLeads = localStorage.getItem('demobuilder_leads');
-    const savedTeam = localStorage.getItem('demobuilder_team');
-    if (savedLeads) setLeads(JSON.parse(savedLeads));
-    if (savedTeam) setTeam(JSON.parse(savedTeam));
-  }, []);
+    const saved = localStorage.getItem('demobuilder_leads')
+    if (saved) setLeads(JSON.parse(saved))
+  }, [])
 
+  // Reload leads when switching to CRM tab so it's always fresh
   useEffect(() => {
-    if (activeTab === 'sites') loadSites();
-  }, [activeTab]);
-
-  const loadSites = async () => {
-    setSitesLoading(true);
-    const { data } = await loadDemoSites();
-    setSites(data || []);
-    setSitesLoading(false);
-  };
-
-  const saveLeads = (updated) => { setLeads(updated); localStorage.setItem('demobuilder_leads', JSON.stringify(updated)); };
-  const saveTeam = (updated) => { setTeam(updated); localStorage.setItem('demobuilder_team', JSON.stringify(updated)); };
-
-  const handleAddTeamMember = () => {
-    if (newTeamMember.trim()) { saveTeam([...team, newTeamMember.trim()]); setNewTeamMember(''); }
-  };
-  const handleRemoveTeamMember = (name) => saveTeam(team.filter(m => m !== name));
-
-  const handleAddLeads = () => {
-    const lines = bulkInput.trim().split('\n').filter(l => l.trim());
-    const newLeads = lines.map(line => {
-      const [name, phone, whatsapp, category, address, facebookUrl, instagramUrl] = line.split('|').map(i => i.trim());
-      if (!name) return null;
-      return { id: crypto.randomUUID(), name, phone: phone||'', whatsapp: whatsapp||'', category: category||'', address: address||'', facebookUrl: facebookUrl||'', instagramUrl: instagramUrl||'', status: 'new', assignedTo: '', demoUrl: '', shortUrl: '', notes: '', createdAt: new Date().toISOString(), builtAt: null };
-    }).filter(Boolean);
-    setBulkCount(newLeads.length);
-    if (newLeads.length > 0) { saveLeads([...leads, ...newLeads]); setBulkInput(''); setTimeout(() => setBulkCount(0), 3000); }
-  };
-
-  const getStatusColor = (s) => ({ new:'#334155', assigned:'#1e3a8a', built:'#14532d', sent:'#713f12', closed:'#166534', dead:'#450a0a' }[s]||'#334155');
-  const getStatusTextColor = (s) => ({ new:'#cbd5e1', assigned:'#93c5fd', built:'#86efac', sent:'#fbbf24', closed:'#4ade80', dead:'#fca5a5' }[s]||'#cbd5e1');
-
-  const filteredLeads = leads.filter(lead => {
-    return lead.name.toLowerCase().includes(searchName.toLowerCase())
-      && (filterStatus === 'all' || lead.status === filterStatus)
-      && (filterAssigned === 'all' || lead.assignedTo === filterAssigned)
-      && (filterCategory === 'all' || lead.category === filterCategory);
-  });
-
-  const counts = { total: leads.length, new: leads.filter(l=>l.status==='new').length, assigned: leads.filter(l=>l.status==='assigned').length, built: leads.filter(l=>l.status==='built').length, sent: leads.filter(l=>l.status==='sent').length, closed: leads.filter(l=>l.status==='closed').length, dead: leads.filter(l=>l.status==='dead').length };
-  const categories = [...new Set(leads.map(l => l.category).filter(Boolean))];
-
-  const handleBulkAssign = () => {
-    if (!assignToDropdown || selectedLeads.size === 0) return;
-    saveLeads(leads.map(l => selectedLeads.has(l.id) ? { ...l, assignedTo: assignToDropdown, status: 'assigned' } : l));
-    setSelectedLeads(new Set()); setAssignToDropdown('');
-  };
-  const handleBulkMarkDead = () => {
-    if (selectedLeads.size === 0) return;
-    if (!window.confirm(`Mark ${selectedLeads.size} leads as dead?`)) return;
-    saveLeads(leads.map(l => selectedLeads.has(l.id) ? { ...l, status: 'dead' } : l));
-    setSelectedLeads(new Set());
-  };
-  const handleBulkDelete = () => {
-    if (selectedLeads.size === 0) return;
-    if (!window.confirm(`Delete ${selectedLeads.size} leads permanently?`)) return;
-    saveLeads(leads.filter(l => !selectedLeads.has(l.id)));
-    setSelectedLeads(new Set());
-  };
-  const updateLead = (id, updates) => saveLeads(leads.map(l => l.id === id ? { ...l, ...updates } : l));
-  const deleteLead = (id) => { if (!window.confirm('Delete this lead?')) return; saveLeads(leads.filter(l => l.id !== id)); };
-  const markBuilt = (id) => updateLead(id, { status: 'built', builtAt: new Date().toISOString() });
-
-  const handleExportCSV = () => {
-    const builtLeads = leads.filter(l => l.status === 'built');
-    if (builtLeads.length === 0) { alert('No built leads to export'); return; }
-    const csv = [['Name','Phone','Demo URL','Short URL','Assigned To','Built At'].join(','), ...builtLeads.map(l => [`"${l.name}"`, `"${l.phone}"`, `"${l.demoUrl}"`, `"${l.shortUrl}"`, `"${l.assignedTo}"`, `"${new Date(l.builtAt).toLocaleString()}"`].join(','))].join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-  };
-
-  const toggleSelect = (id) => { const s = new Set(selectedLeads); s.has(id) ? s.delete(id) : s.add(id); setSelectedLeads(s); };
-  const toggleSelectAll = () => setSelectedLeads(selectedLeads.size === filteredLeads.length ? new Set() : new Set(filteredLeads.map(l => l.id)));
-
-  const handleShortenURL = async (leadId) => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead?.demoUrl) return;
-    setShorteningLeadId(leadId);
-    const shortUrl = await shortenURL(lead.demoUrl);
-    if (shortUrl) {
-      updateLead(leadId, { shortUrl });
-      // Also save to Supabase
-      await saveDemoSite({ leadId, businessName: lead.name, phone: lead.phone || lead.whatsapp, category: lead.category, fullUrl: lead.demoUrl, shortUrl });
+    if (tab === 'crm') {
+      const saved = localStorage.getItem('demobuilder_leads')
+      const all = saved ? JSON.parse(saved) : []
+      setCrmLeads(all.filter(l => l.status === 'built' && (l.shortUrl || l.demoUrl)))
     }
-    setShorteningLeadId(null);
-  };
+  }, [tab])
 
-  const handleBulkShortenURLs = async () => {
-    const toShorten = leads.filter(l => l.status === 'built' && l.demoUrl && !l.shortUrl);
-    if (toShorten.length === 0) { alert('No URLs to shorten'); return; }
-    setBulkShorteningProgress({ current: 0, total: toShorten.length });
-    const updated = [...leads];
-    for (let i = 0; i < toShorten.length; i++) {
-      const lead = toShorten[i];
-      const shortUrl = await shortenURL(lead.demoUrl);
-      if (shortUrl) {
-        const idx = updated.findIndex(l => l.id === lead.id);
-        if (idx >= 0) updated[idx] = { ...updated[idx], shortUrl };
-        await saveDemoSite({ leadId: lead.id, businessName: lead.name, phone: lead.phone || lead.whatsapp, category: lead.category, fullUrl: lead.demoUrl, shortUrl });
+  const save = (updated) => { setLeads(updated); localStorage.setItem('demobuilder_leads', JSON.stringify(updated)) }
+
+  const filtered = leads.filter(l => {
+    const matchSearch = l.name.toLowerCase().includes(search.toLowerCase())
+    const matchStatus = filterStatus === 'all' || l.status === filterStatus
+    return matchSearch && matchStatus
+  })
+
+  const counts = {
+    all: leads.length,
+    new: leads.filter(l => l.status === 'new').length,
+    built: leads.filter(l => l.status === 'built').length,
+    sent: leads.filter(l => l.status === 'sent').length,
+    dead: leads.filter(l => l.status === 'dead').length,
+  }
+
+  const toggleSelect = (id) => { const s = new Set(selected); s.has(id) ? s.delete(id) : s.add(id); setSelected(s) }
+  const toggleAll = () => setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map(l => l.id)))
+
+  const deleteLead = (id) => { if (!confirm('Delete this lead?')) return; save(leads.filter(l => l.id !== id)) }
+  const updateLead = (id, updates) => save(leads.map(l => l.id === id ? { ...l, ...updates } : l))
+
+  // ── Bulk Build ────────────────────────────────────────────────────────────
+  const handleBulkBuild = async () => {
+    const toBuild = leads.filter(l => selected.has(l.id) && l.status !== 'built')
+    if (!toBuild.length) { alert('Select some new leads first'); return }
+    setBuilding(true)
+    setBuildProgress({ current: 0, total: toBuild.length })
+
+    const updated = [...leads]
+    for (let i = 0; i < toBuild.length; i++) {
+      const lead = toBuild[i]
+      try {
+        const biz = buildBusinessFromLead(lead)
+        const fullUrl = buildShareableURL(biz)
+        const shortUrl = await shortenURL(fullUrl)
+
+        // Save to Supabase if available
+        try {
+          if (supabase) {
+            await supabase.from('demo_sites').insert({
+              business_name: lead.name,
+              phone: lead.phone || lead.whatsapp || '',
+              category: lead.category || '',
+              full_url: fullUrl,
+              short_url: shortUrl || '',
+              status: 'active',
+            })
+          }
+        } catch { /* supabase optional */ }
+
+        const idx = updated.findIndex(l => l.id === lead.id)
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], status: 'built', demoUrl: fullUrl, shortUrl: shortUrl || '', builtAt: new Date().toISOString() }
+        }
+      } catch (e) {
+        console.error('Build failed for', lead.name, e)
       }
-      setBulkShorteningProgress({ current: i + 1, total: toShorten.length });
-      if (i < toShorten.length - 1) await new Promise(r => setTimeout(r, 300));
+      setBuildProgress({ current: i + 1, total: toBuild.length })
+      if (i < toBuild.length - 1) await new Promise(r => setTimeout(r, 400))
     }
-    saveLeads(updated);
-    setTimeout(() => setBulkShorteningProgress(null), 2000);
-  };
 
-  const handleCopyMessage = async (lead) => {
-    const url = lead.shortUrl || lead.demoUrl;
-    if (!url) { alert('No URL yet — shorten the URL first'); return; }
-    const fakeBusiness = { name: lead.name, category: lead.category };
-    await copyMessageToClipboard(fakeBusiness, url);
-    setCopiedId(lead.id);
-    setTimeout(() => setCopiedId(null), 3000);
-  };
+    save(updated)
+    setSelected(new Set())
+    setBuilding(false)
+    setBuildProgress(null)
+  }
 
-  const handleOpenWhatsApp = (lead) => {
-    const url = lead.shortUrl || lead.demoUrl;
-    if (!url) { alert('No URL yet — shorten the URL first'); return; }
-    const phone = (lead.whatsapp || lead.phone || '').replace(/\D/g, '');
-    if (!phone) { alert('No phone number for this lead'); return; }
-    const fakeBusiness = { name: lead.name, category: lead.category };
-    const waLink = buildWhatsAppLink(phone, fakeBusiness, url);
-    window.open(waLink, '_blank');
-  };
+  // ── Delete inactive sites ─────────────────────────────────────────────────
+  const handleDeleteInactive = async () => {
+    if (!confirm('Delete all dead/inactive leads and their sites?')) return
+    setDeletingInactive(true)
+    const toKeep = leads.filter(l => l.status !== 'dead')
+    // Also remove from Supabase
+    const deadNames = leads.filter(l => l.status === 'dead').map(l => l.name)
+    try {
+      if (supabase && deadNames.length) {
+        for (const name of deadNames) {
+          await supabase.from('demo_sites').update({ status: 'inactive' }).eq('business_name', name)
+        }
+      }
+    } catch { /* ok */ }
+    save(toKeep)
+    setDeletingInactive(false)
+  }
 
-  // Site manager handlers
-  const handleToggleSiteStatus = async (site) => {
-    const newStatus = site.status === 'active' ? 'inactive' : 'active';
-    await updateSiteStatus(site.id, newStatus);
-    setSites(sites.map(s => s.id === site.id ? { ...s, status: newStatus } : s));
-  };
-
-  const handleDeleteSite = async (id) => {
-    if (!window.confirm('Delete this demo site permanently?')) return;
-    await deleteSite(id);
-    setSites(sites.filter(s => s.id !== id));
-  };
-
-  const handleBulkDeleteInactive = async (days) => {
-    if (!window.confirm(`Delete all inactive sites older than ${days} days?`)) return;
-    setDeleteProgress('Deleting...');
-    const { count, error } = await bulkDeleteInactive({ olderThanDays: days });
-    setDeleteProgress(error ? `Error: ${error.message}` : `Deleted ${count} sites`);
-    await loadSites();
-    setTimeout(() => setDeleteProgress(''), 4000);
-  };
-
-  const filteredSites = sites.filter(s => siteFilter === 'all' || s.status === siteFilter);
-
-  const cs = { padding: '24px', backgroundColor: '#020617', fontFamily: 'Outfit, sans-serif', color: '#e2e8f0', minHeight: '100vh' };
-  const cardS = { backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '20px', marginBottom: '20px' };
-  const btnS = { padding: '8px 16px', backgroundColor: '#0ea5e9', color: '#020617', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', fontFamily: 'Outfit, sans-serif' };
-  const btnDanger = { ...btnS, backgroundColor: '#e11d48', color: '#fff' };
-  const btnGreen = { ...btnS, backgroundColor: '#16a34a', color: '#fff' };
-  const btnAmber = { ...btnS, backgroundColor: '#d97706', color: '#fff' };
-  const inpS = { padding: '8px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#e2e8f0', fontSize: '14px', fontFamily: 'Outfit, sans-serif' };
-
-  const tabStyle = (t) => ({ padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: 14, fontFamily: 'Outfit, sans-serif', background: activeTab === t ? '#0ea5e9' : '#1e293b', color: activeTab === t ? '#020617' : '#94a3b8' });
+  const statusColor = { new: '#334155', built: '#14532d', sent: '#713f12', dead: '#450a0a', assigned: '#1e3a8a' }
+  const statusText = { new: '#cbd5e1', built: '#4ade80', sent: '#fbbf24', dead: '#fca5a5', assigned: '#93c5fd' }
 
   return (
-    <div style={cs}>
+    <div style={{ minHeight: '100vh', background: '#020617', color: '#e2e8f0', fontFamily: "'Outfit', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px' }}>
 
-      {/* HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#0ea5e9', cursor: 'pointer', fontSize: 24 }}>←</button>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>Lead Manager</h1>
-      </div>
-
-      {/* TABS */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        <button style={tabStyle('leads')} onClick={() => setActiveTab('leads')}>📋 Leads CRM</button>
-        <button style={tabStyle('sites')} onClick={() => setActiveTab('sites')}>🌐 Site Manager</button>
-      </div>
-
-      {/* ═══════════ LEADS TAB ═══════════ */}
-      {activeTab === 'leads' && (
-        <>
-          {/* ADD LEADS */}
-          <div style={cardS}>
-            <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 20 }}>Add Leads</h2>
-            <textarea value={bulkInput} onChange={e => setBulkInput(e.target.value)}
-              placeholder={"BusinessName | phone | whatsapp | category | address | facebookUrl | instagramUrl\nOne per line. URLs optional."}
-              style={{ ...inpS, width: '100%', minHeight: 120, resize: 'vertical', fontFamily: 'monospace', fontSize: 12, padding: 12, boxSizing: 'border-box' }}
-            />
-            <div style={{ marginTop: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <button onClick={handleAddLeads} style={btnS}>Add All Leads</button>
-              {bulkCount > 0 && <span style={{ color: '#4ade80', fontWeight: 600 }}>✓ {bulkCount} leads added</span>}
-            </div>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
+          <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#0ea5e9', cursor: 'pointer', fontSize: 22, padding: 0 }}>←</button>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800 }}>Leads & CRM</h1>
+            <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>Select leads → bulk build sites → copy outreach messages from CRM</div>
           </div>
+        </div>
 
-          {/* TEAM */}
-          <div style={cardS}>
-            <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 20 }}>Team Members</h2>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <input type="text" value={newTeamMember} onChange={e => setNewTeamMember(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddTeamMember()} placeholder="Enter team member name" style={{ ...inpS, flex: 1 }} />
-              <button onClick={handleAddTeamMember} style={btnS}>Add</button>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {team.map(member => (
-                <div key={member} style={{ display: 'flex', alignItems: 'center', gap: 8, backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 20, padding: '6px 12px', fontSize: 13 }}>
-                  {member}
-                  <button onClick={() => handleRemoveTeamMember(member)} style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', fontSize: 16 }}>×</button>
-                </div>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+          {[['leads', `📋 Leads (${leads.length})`], ['crm', `💬 CRM (${leads.filter(l => l.status === 'built' && (l.shortUrl || l.demoUrl)).length} ready)`]].map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)} style={{ padding: '10px 22px', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14, fontFamily: 'inherit', background: tab === id ? (id === 'crm' ? '#7c3aed' : '#0ea5e9') : '#1e293b', color: tab === id ? '#fff' : '#94a3b8' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ═══ LEADS TAB ═══════════════════════════════════════════════════ */}
+        {tab === 'leads' && (
+          <>
+            {/* Status filters */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+              {Object.entries(counts).map(([s, c]) => (
+                <button key={s} onClick={() => setFilterStatus(s)} style={{ padding: '6px 16px', borderRadius: 20, border: filterStatus === s ? 'none' : '1px solid #334155', background: filterStatus === s ? '#0ea5e9' : '#1e293b', color: filterStatus === s ? '#020617' : '#cbd5e1', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize' }}>
+                  {s} ({c})
+                </button>
               ))}
             </div>
-          </div>
 
-          {/* STATS */}
-          <div style={{ ...cardS, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {[['total',counts.total],['new',counts.new],['assigned',counts.assigned],['built',counts.built],['sent',counts.sent],['closed',counts.closed],['dead',counts.dead]].map(([s,c]) => (
-              <button key={s} onClick={() => setFilterStatus(filterStatus===s?'all':s)} style={{ padding: '6px 16px', backgroundColor: filterStatus===s?'#0ea5e9':'#1e293b', color: filterStatus===s?'#020617':'#cbd5e1', border: filterStatus===s?'none':'1px solid #334155', borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 500, textTransform: 'capitalize', fontFamily: 'Outfit, sans-serif' }}>
-                {s === 'total' ? 'Total' : s} <strong>({c})</strong>
+            {/* Search + actions bar */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name..." style={{ ...S.inp, flex: 1, minWidth: 180 }} />
+              <button onClick={toggleAll} style={{ ...S.btn, background: '#1e293b', color: '#94a3b8', border: '1px solid #334155' }}>
+                {selected.size === filtered.length && filtered.length > 0 ? '☑ Deselect All' : '☐ Select All'}
               </button>
-            ))}
-            <div style={{ marginLeft: 'auto' }}>
-              <button onClick={handleExportCSV} style={btnS}>📥 Export CSV</button>
+              {selected.size > 0 && (
+                <>
+                  <button onClick={handleBulkBuild} disabled={building} style={{ ...S.btnPurple, opacity: building ? 0.6 : 1 }}>
+                    {building ? `⏳ Building ${buildProgress?.current}/${buildProgress?.total}...` : `⚡ Build ${selected.size} Site${selected.size > 1 ? 's' : ''}`}
+                  </button>
+                  <button onClick={() => { if (confirm(`Mark ${selected.size} as dead?`)) { save(leads.map(l => selected.has(l.id) ? { ...l, status: 'dead' } : l)); setSelected(new Set()) } }} style={S.btnRed}>
+                    🗑 Mark Dead
+                  </button>
+                </>
+              )}
+              <button onClick={handleDeleteInactive} disabled={deletingInactive} style={{ ...S.btnRed, background: '#7f1d1d', marginLeft: 'auto' }}>
+                {deletingInactive ? 'Deleting...' : '🗑 Delete All Dead'}
+              </button>
             </div>
-          </div>
 
-          {/* FILTERS */}
-          <div style={{ ...cardS, marginBottom: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              <input type="text" value={searchName} onChange={e => setSearchName(e.target.value)} placeholder="Search by name..." style={inpS} />
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={inpS}>
-                <option value="all">All Status</option>
-                {['new','assigned','built','sent','closed','dead'].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <select value={filterAssigned} onChange={e => setFilterAssigned(e.target.value)} style={inpS}>
-                <option value="all">All Team</option>
-                {team.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-              <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={inpS}>
-                <option value="all">All Categories</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* BULK ACTIONS */}
-          {selectedLeads.size > 0 && (
-            <div style={{ ...cardS, backgroundColor: '#1e3a8a', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 600 }}>{selectedLeads.size} selected</span>
-              <select value={assignToDropdown} onChange={e => setAssignToDropdown(e.target.value)} style={inpS}>
-                <option value="">Assign to...</option>
-                {team.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-              <button onClick={handleBulkAssign} style={btnS}>Assign</button>
-              <button onClick={handleBulkMarkDead} style={btnDanger}>Mark Dead</button>
-              <button onClick={handleBulkDelete} style={btnDanger}>Delete</button>
-            </div>
-          )}
-
-          {/* BULK SHORTEN PROGRESS */}
-          {bulkShorteningProgress && (
-            <div style={{ ...cardS, backgroundColor: '#0ea5e9', color: '#020617', display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span style={{ fontWeight: 600 }}>Shortening {bulkShorteningProgress.current}/{bulkShorteningProgress.total}...</span>
-              <div style={{ flex: 1, height: 8, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ height: '100%', backgroundColor: '#020617', width: `${(bulkShorteningProgress.current/bulkShorteningProgress.total)*100}%`, transition: 'width 0.3s' }} />
-              </div>
-            </div>
-          )}
-
-          {/* SHORTEN ALL */}
-          <div style={{ ...cardS, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button onClick={handleBulkShortenURLs} style={btnS}>🔗 Shorten All Built URLs</button>
-            <span style={{ color: '#94a3b8', fontSize: 13 }}>{leads.filter(l => l.status==='built' && l.demoUrl && !l.shortUrl).length} URLs pending</span>
-          </div>
-
-          {/* LEADS TABLE */}
-          <div style={{ overflowX: 'auto' }}>
-            {filteredLeads.length === 0 ? (
-              <div style={{ ...cardS, textAlign: 'center', color: '#94a3b8', padding: '40px 20px' }}>
-                {leads.length === 0 ? 'No leads yet. Add some above.' : 'No leads match current filters.'}
+            {/* Leads list */}
+            {filtered.length === 0 ? (
+              <div style={{ ...S.card, textAlign: 'center', padding: 40, color: '#64748b' }}>
+                {leads.length === 0 ? (
+                  <div>
+                    <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No leads yet</div>
+                    <div style={{ fontSize: 13 }}>Go to Builder → search Google Maps → select businesses → Add to Leads</div>
+                  </div>
+                ) : 'No leads match this filter.'}
               </div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: 8, overflow: 'hidden' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155' }}>
-                    <th style={{ padding: 12, textAlign: 'left', width: 40 }}>
-                      <input type="checkbox" checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0} onChange={toggleSelectAll} style={{ cursor: 'pointer', width: 18, height: 18 }} />
-                    </th>
-                    {['Business','Category','Location','Assigned','Status','URL / WhatsApp','Actions'].map(h => (
-                      <th key={h} style={{ padding: 12, textAlign: 'left', fontSize: 13, color: '#94a3b8', fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLeads.map(lead => (
-                    <React.Fragment key={lead.id}>
-                      <tr style={{ borderBottom: '1px solid #1e293b', backgroundColor: selectedLeads.has(lead.id) ? '#1e3a5f' : 'transparent' }}>
-                        <td style={{ padding: 12 }}><input type="checkbox" checked={selectedLeads.has(lead.id)} onChange={() => toggleSelect(lead.id)} style={{ cursor: 'pointer', width: 18, height: 18 }} /></td>
-                        <td style={{ padding: 12, fontWeight: 500 }}>{lead.name}</td>
-                        <td style={{ padding: 12, color: '#cbd5e1' }}>{lead.category || '—'}</td>
-                        <td style={{ padding: 12, color: '#cbd5e1', fontSize: 12 }}>{lead.address || '—'}</td>
-                        <td style={{ padding: 12 }}>
-                          <select value={lead.assignedTo} onChange={e => updateLead(lead.id, { assignedTo: e.target.value })} style={inpS}>
-                            <option value="">Unassigned</option>
-                            {team.map(m => <option key={m} value={m}>{m}</option>)}
-                          </select>
-                        </td>
-                        <td style={{ padding: 12 }}>
-                          <select value={lead.status} onChange={e => updateLead(lead.id, { status: e.target.value })} style={{ ...inpS, backgroundColor: getStatusColor(lead.status), color: getStatusTextColor(lead.status), fontWeight: 600, border: 'none' }}>
-                            {['new','assigned','built','sent','closed','dead'].map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
-                        </td>
-                        <td style={{ padding: 12 }}>
-                          {lead.status === 'built' ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              <input type="text" value={lead.demoUrl} onChange={e => updateLead(lead.id, { demoUrl: e.target.value })} placeholder="Paste demo URL" style={{ ...inpS, width: 140, fontSize: 12 }} />
-                              {lead.shortUrl ? (
-                                <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-                                  <span style={{ fontSize: 11, color: '#4ade80', fontFamily: 'monospace', background: '#052e16', padding: '3px 8px', borderRadius: 4 }}>{lead.shortUrl}</span>
-                                  <button onClick={() => { navigator.clipboard.writeText(lead.shortUrl); }} style={{ ...btnS, padding: '3px 8px', fontSize: 11 }}>Copy</button>
-                                </div>
-                              ) : (
-                                <button onClick={() => handleShortenURL(lead.id)} disabled={shorteningLeadId === lead.id} style={{ ...btnS, fontSize: 11, padding: '4px 10px', opacity: shorteningLeadId === lead.id ? 0.6 : 1 }}>
-                                  {shorteningLeadId === lead.id ? '⏳ Shortening...' : '🔗 Shorten URL'}
-                                </button>
-                              )}
-                              {/* WhatsApp outreach buttons */}
-                              <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
-                                <button onClick={() => handleOpenWhatsApp(lead)} style={{ ...btnS, background: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#fff', fontSize: 11, padding: '4px 10px' }}>
-                                  💬 Send WA
-                                </button>
-                                <button onClick={() => handleCopyMessage(lead)} style={{ ...btnS, background: copiedId === lead.id ? '#16a34a' : '#1e3a8a', color: copiedId === lead.id ? '#fff' : '#93c5fd', fontSize: 11, padding: '4px 10px' }}>
-                                  {copiedId === lead.id ? '✅ Copied!' : '📋 Copy Msg'}
-                                </button>
-                                <button onClick={() => setOpenMessageId(openMessageId === lead.id ? null : lead.id)} style={{ ...btnS, background: '#334155', color: '#94a3b8', fontSize: 11, padding: '4px 8px' }}>
-                                  👁️
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <span style={{ color: '#64748b' }}>—</span>
-                          )}
-                        </td>
-                        <td style={{ padding: 12 }}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            {lead.status !== 'built' && (
-                              <button onClick={() => markBuilt(lead.id)} style={{ padding: '4px 8px', backgroundColor: '#14532d', color: '#86efac', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit, sans-serif' }}>✓ Built</button>
-                            )}
-                            <button onClick={() => deleteLead(lead.id)} style={{ padding: '4px 8px', backgroundColor: '#450a0a', color: '#fca5a5', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit, sans-serif' }}>Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                      {/* Expandable message preview */}
-                      {openMessageId === lead.id && (
-                        <tr>
-                          <td colSpan={8} style={{ padding: '0 12px 16px', backgroundColor: '#0a1628' }}>
-                            <div style={{ background: '#0f172a', borderRadius: 8, padding: 16, border: '1px solid #1e3a5f' }}>
-                              <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8, fontWeight: 600 }}>PREVIEW — WhatsApp outreach message</div>
-                              <pre style={{ fontSize: 12, color: '#e2e8f0', fontFamily: 'inherit', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.6 }}>
-                                {buildWhatsAppMessage({ name: lead.name, category: lead.category }, lead.shortUrl || lead.demoUrl || '[URL pending]')}
-                              </pre>
-                            </div>
-                          </td>
-                        </tr>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {filtered.map(lead => (
+                  <div key={lead.id} style={{ background: '#0f172a', border: `1px solid ${selected.has(lead.id) ? '#0ea5e9' : '#1e293b'}`, borderRadius: 10, padding: '14px 16px', transition: 'border-color 0.15s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      {/* Checkbox */}
+                      <div onClick={() => toggleSelect(lead.id)} style={{ width: 22, height: 22, borderRadius: 5, border: `2px solid ${selected.has(lead.id) ? '#0ea5e9' : '#334155'}`, background: selected.has(lead.id) ? '#0ea5e9' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                        {selected.has(lead.id) && <span style={{ color: '#fff', fontSize: 14 }}>✓</span>}
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <div style={{ fontWeight: 700, color: '#f1f5f9', fontSize: 15 }}>{lead.name}</div>
+                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{lead.category} · {lead.phone || lead.whatsapp || 'no phone'} · {lead.address?.split(',')[0] || ''}</div>
+                        {lead.shortUrl && <div style={{ fontSize: 11, color: '#4ade80', marginTop: 3, fontFamily: 'monospace' }}>{lead.shortUrl}</div>}
+                      </div>
+
+                      {/* Status badge */}
+                      <div style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, background: statusColor[lead.status] || '#334155', color: statusText[lead.status] || '#cbd5e1', textTransform: 'capitalize' }}>
+                        {lead.status}
+                      </div>
+
+                      {/* Status change */}
+                      <select value={lead.status} onChange={e => updateLead(lead.id, { status: e.target.value })} style={{ ...S.inp, fontSize: 12 }}>
+                        {['new', 'built', 'sent', 'dead'].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+
+                      {/* Actions */}
+                      {lead.status === 'built' && (lead.shortUrl || lead.demoUrl) && (
+                        <button onClick={() => setTab('crm')} style={{ ...S.btnPurple, fontSize: 12, padding: '5px 12px' }}>💬 CRM →</button>
                       )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* ═══════════ SITE MANAGER TAB ═══════════ */}
-      {activeTab === 'sites' && (
-        <>
-          <div style={{ ...cardS, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>Demo Sites</h2>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              {deleteProgress && <span style={{ color: deleteProgress.startsWith('Error') ? '#fca5a5' : '#4ade80', fontSize: 13, fontWeight: 600 }}>{deleteProgress}</span>}
-              <select value={siteFilter} onChange={e => setSiteFilter(e.target.value)} style={inpS}>
-                <option value="all">All Sites</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <button onClick={() => handleBulkDeleteInactive(30)} style={btnDanger}>🗑 Delete Inactive (30d+)</button>
-              <button onClick={() => handleBulkDeleteInactive(7)} style={{ ...btnDanger, backgroundColor: '#991b1b' }}>🗑 Delete Inactive (7d+)</button>
-              <button onClick={loadSites} style={btnS}>↻ Refresh</button>
-            </div>
-          </div>
-
-          {sitesLoading ? (
-            <div style={{ textAlign: 'center', color: '#94a3b8', padding: 40 }}>Loading sites...</div>
-          ) : filteredSites.length === 0 ? (
-            <div style={{ ...cardS, textAlign: 'center', color: '#94a3b8', padding: 40 }}>
-              {sites.length === 0 ? (
-                <div>
-                  <div style={{ fontSize: 16, marginBottom: 8 }}>No sites saved yet</div>
-                  <div style={{ fontSize: 13 }}>Sites are automatically saved when you shorten a URL in the Leads tab, or when Supabase is connected.</div>
-                  <div style={{ marginTop: 12, padding: 12, background: '#0f172a', borderRadius: 8, fontSize: 12, textAlign: 'left' }}>
-                    <div style={{ color: '#38bdf8', fontWeight: 600, marginBottom: 8 }}>📋 Supabase setup — run this SQL:</div>
-                    <pre style={{ color: '#e2e8f0', margin: 0, fontSize: 11, overflowX: 'auto' }}>{`create table demo_sites (
-  id uuid default gen_random_uuid() primary key,
-  lead_id text,
-  business_name text not null,
-  phone text default '',
-  category text default '',
-  full_url text not null,
-  short_url text default '',
-  slug text unique,
-  status text default 'active' check (status in ('active','inactive','deleted')),
-  created_at timestamptz default now()
-);`}</pre>
-                  </div>
-                </div>
-              ) : 'No sites match this filter.'}
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: 12 }}>
-              {/* Site count summary */}
-              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#94a3b8' }}>
-                <span>Total: <strong style={{ color: '#e2e8f0' }}>{sites.length}</strong></span>
-                <span>Active: <strong style={{ color: '#4ade80' }}>{sites.filter(s=>s.status==='active').length}</strong></span>
-                <span>Inactive: <strong style={{ color: '#fca5a5' }}>{sites.filter(s=>s.status==='inactive').length}</strong></span>
-              </div>
-
-              {filteredSites.map(site => (
-                <div key={site.id} style={{ background: '#0f172a', border: `1px solid ${site.status === 'active' ? '#1e3a5f' : '#450a0a'}`, borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <div style={{ fontWeight: 700, color: '#e2e8f0', marginBottom: 4 }}>{site.business_name}</div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{site.category} · {site.phone}</div>
-                    <div style={{ fontSize: 11, marginTop: 6 }}>
-                      {site.short_url && <span style={{ color: '#4ade80', fontFamily: 'monospace', background: '#052e16', padding: '2px 8px', borderRadius: 4 }}>{site.short_url}</span>}
+                      <button onClick={() => deleteLead(lead.id)} style={{ ...S.btnRed, fontSize: 12, padding: '5px 10px' }}>✕</button>
                     </div>
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', minWidth: 100 }}>
-                    {new Date(site.created_at).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, backgroundColor: site.status === 'active' ? '#14532d' : '#450a0a', color: site.status === 'active' ? '#4ade80' : '#fca5a5' }}>
-                      {site.status}
-                    </span>
-                    <button onClick={() => handleToggleSiteStatus(site)} style={{ ...btnS, padding: '5px 12px', fontSize: 12, background: site.status === 'active' ? '#d97706' : '#16a34a', color: '#fff' }}>
-                      {site.status === 'active' ? '⏸ Deactivate' : '▶ Activate'}
-                    </button>
-                    {site.short_url && (
-                      <button onClick={() => navigator.clipboard.writeText(site.short_url)} style={{ ...btnS, padding: '5px 12px', fontSize: 12 }}>Copy URL</button>
-                    )}
-                    <button onClick={() => handleDeleteSite(site.id)} style={{ ...btnDanger, padding: '5px 12px', fontSize: 12 }}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
-export default LeadManager;
+        {/* ═══ CRM TAB ════════════════════════════════════════════════════ */}
+        {tab === 'crm' && (
+          <>
+            <div style={{ marginBottom: 16 }}>
+              <input value={crmSearch} onChange={e => setCrmSearch(e.target.value)} placeholder="Search CRM..." style={{ ...S.inp, width: '100%', boxSizing: 'border-box', padding: '10px 14px', fontSize: 14 }} />
+            </div>
+
+            {crmLeads.filter(l => l.name.toLowerCase().includes(crmSearch.toLowerCase())).length === 0 ? (
+              <div style={{ ...S.card, textAlign: 'center', padding: 40, color: '#64748b' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No sites built yet</div>
+                <div style={{ fontSize: 13 }}>Go to Leads tab → select leads → click Build Sites. Once built they appear here with their outreach message ready to send.</div>
+                <button onClick={() => setTab('leads')} style={{ ...S.btn, marginTop: 16 }}>← Back to Leads</button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 14 }}>
+                {crmLeads
+                  .filter(l => l.name.toLowerCase().includes(crmSearch.toLowerCase()))
+                  .map(lead => {
+                    const url = lead.shortUrl || lead.demoUrl
+                    const waNumber = (lead.whatsapp || lead.phone || '').replace(/\D/g, '')
+                    const message = buildOutreachMessage(lead)
+                    const waLink = waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}` : null
+                    const isExpanded = expandedId === lead.id
+                    const isCopied = copiedId === lead.id
+
+                    return (
+                      <div key={lead.id} style={{ background: '#0f172a', border: '1px solid #1e3a5f', borderRadius: 12, overflow: 'hidden' }}>
+                        {/* Header row */}
+                        <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                          <div style={{ flex: 1, minWidth: 160 }}>
+                            <div style={{ fontWeight: 800, fontSize: 16, color: '#f1f5f9' }}>{lead.name}</div>
+                            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{lead.category} · {lead.phone || lead.whatsapp || 'no phone'}</div>
+                          </div>
+
+                          {/* Short URL */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 12, color: '#4ade80', fontFamily: 'monospace', background: '#052e16', padding: '4px 10px', borderRadius: 6 }}>{url}</span>
+                            <button onClick={() => { navigator.clipboard.writeText(url); setCopiedId(lead.id + '_url'); setTimeout(() => setCopiedId(null), 2000) }} style={{ ...S.btn, fontSize: 11, padding: '4px 10px' }}>
+                              {copiedId === lead.id + '_url' ? '✅' : '📋 URL'}
+                            </button>
+                          </div>
+
+                          {/* Status */}
+                          <select value={lead.status} onChange={e => { updateLead(lead.id, { status: e.target.value }); setCrmLeads(crmLeads.map(l => l.id === lead.id ? { ...l, status: e.target.value } : l)) }} style={{ ...S.inp, fontSize: 12 }}>
+                            {['built', 'sent', 'dead'].map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+
+                          {/* Action buttons */}
+                          <button onClick={() => { navigator.clipboard.writeText(message); setCopiedId(lead.id); setTimeout(() => setCopiedId(null), 3000) }} style={{ ...S.btnGreen, fontSize: 12, padding: '6px 14px' }}>
+                            {isCopied ? '✅ Copied!' : '📋 Copy Message'}
+                          </button>
+
+                          {waLink && (
+                            <a href={waLink} target="_blank" rel="noopener noreferrer" style={{ ...S.btn, background: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#fff', textDecoration: 'none', fontSize: 12, padding: '6px 14px' }}>
+                              💬 Open WhatsApp
+                            </a>
+                          )}
+
+                          <button onClick={() => setExpandedId(isExpanded ? null : lead.id)} style={{ ...S.inp, cursor: 'pointer', fontSize: 12, padding: '6px 12px', color: '#94a3b8' }}>
+                            {isExpanded ? '▲ Hide' : '▼ Preview'}
+                          </button>
+                        </div>
+
+                        {/* Expanded message preview */}
+                        {isExpanded && (
+                          <div style={{ borderTop: '1px solid #1e3a5f', padding: '16px 20px', background: '#080f1a' }}>
+                            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp outreach message preview</div>
+                            <pre style={{ margin: 0, fontFamily: 'inherit', fontSize: 13, color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{message}</pre>
+                            <button onClick={() => { navigator.clipboard.writeText(message); setCopiedId(lead.id); setTimeout(() => setCopiedId(null), 3000) }} style={{ ...S.btnGreen, marginTop: 14, fontSize: 13 }}>
+                              {isCopied ? '✅ Copied to clipboard!' : '📋 Copy Full Message'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -2,30 +2,22 @@ import { useState } from 'react'
 import Navbar from './components/Navbar'
 import AdminForm from './components/AdminForm'
 import DemoSite from './components/DemoSite'
-import BulkGenerator from './components/BulkGenerator'
 import LeadManager from './components/LeadManager'
 import BusinessDashboard from './components/BusinessDashboard'
-import { getFullUrl } from './utils/shortLinks'
 
 function getBusinessFromURL() {
   try {
-    // Read from hash-based params (e.g., #d=...) instead of query params
-    // This works better on mobile (especially WhatsApp) where query params may be stripped
-    const hash = window.location.hash.slice(1) // Remove the leading '#'
+    const hash = window.location.hash.slice(1)
     const params = new URLSearchParams(hash)
     const data = params.get('d')
     if (!data) return null
     const decoded = JSON.parse(decodeURIComponent(atob(data)))
     if (!decoded.name) return null
     return decoded
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
 export function buildShareableURL(business) {
-  // Use hash-based params (#d=...) instead of query params (?d=...)
-  // This is more reliable on mobile browsers and WhatsApp
   const encoded = btoa(encodeURIComponent(JSON.stringify(business)))
   return `${window.location.origin}${window.location.pathname}#d=${encoded}`
 }
@@ -73,55 +65,38 @@ function SharedDemoWrapper({ business }) {
   if (sharedView === 'dashboard') {
     return <BusinessDashboard business={business} onBack={() => setSharedView('site')} onEditSite={null} isClientView={true} />
   }
-  return (
-    <DemoSite
-      business={business}
-      onBack={null}
-      isSharedView={true}
-      isDemo={true}
-      onDashboard={() => setSharedView('dashboard')}
-    />
-  )
+  return <DemoSite business={business} onBack={null} isSharedView={true} isDemo={true} onDashboard={() => setSharedView('dashboard')} />
 }
 
 export default function App() {
   const urlBusiness = getBusinessFromURL()
-  const isDemo = window.location.hash.length > 1 // Check hash instead of search
+  const isDemo = window.location.hash.length > 1
 
-  // Handle short link redirects
-  const path = window.location.pathname
-  if (path.startsWith('/d/')) {
-    const slug = path.split('/d/')[1]
-    getFullUrl(slug).then(fullUrl => {
-      window.location.href = fullUrl
-    }).catch(() => {
-      // Handle error, maybe show 404
-    })
-    return <div>Redirecting...</div>
-  }
-
-  const [view, setView] = useState(urlBusiness ? 'demo' : 'admin')
+  const [view, setView] = useState('admin')
   const [business, setBusiness] = useState(urlBusiness || defaultBusiness)
-  const [dashBusiness, setDashBusiness] = useState(urlBusiness || defaultBusiness)
 
-  // If viewing shared link, skip navbar and just show demo
   if (isDemo && urlBusiness) {
-    return <SharedDemoWrapper business={business} />
+    return <SharedDemoWrapper business={urlBusiness} />
   }
 
-  // Render navbar + content
   return (
     <div style={{ minHeight: '100vh', background: '#020617', color: '#e2e8f0', fontFamily: "'Outfit', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       <Navbar activeView={view} onViewChange={setView} />
-
-      {/* Content */}
       <div>
-        {view === 'admin' && <AdminForm business={business} onChange={setBusiness} onPreview={() => setView('demo')} onBulk={() => setView('bulk')} />}
-        {view === 'demo' && <DemoSite business={business} onBack={() => setView('admin')} isSharedView={false} isDemo={false} onDashboard={() => setView('dashboard')} />}
-        {view === 'bulk' && <BulkGenerator onBack={() => setView('admin')} />}
+        {view === 'admin' && (
+          <AdminForm
+            business={business}
+            onChange={setBusiness}
+            onPreview={() => setView('demo')}
+            onGoToLeads={() => setView('leads')}
+          />
+        )}
+        {view === 'demo' && (
+          <DemoSite business={business} onBack={() => setView('admin')} isSharedView={false} isDemo={false} onDashboard={() => setView('dashboard')} />
+        )}
         {view === 'leads' && <LeadManager onBack={() => setView('admin')} />}
-        {view === 'dashboard' && <BusinessDashboard business={dashBusiness} onBack={() => setView('demo')} onEditSite={() => setView('admin')} />}
+        {view === 'dashboard' && <BusinessDashboard business={business} onBack={() => setView('demo')} onEditSite={() => setView('admin')} />}
       </div>
     </div>
   )
