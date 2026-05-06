@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../utils/supabase';
 
 // URL Shortening function
 async function shortenURL(longUrl) {
@@ -14,6 +15,13 @@ async function shortenURL(longUrl) {
   }
 }
 
+function buildWhatsAppLink(business, shortUrl) {
+  const message = encodeURIComponent(
+    `Hi ${business.name}! 👋\n\nI built a free demo website for your business — check it out here:\n👉 ${shortUrl}\n\nIt shows how your business could look online with features like:\n✅ Online booking\n✅ Customer reviews\n✅ Google Maps integration\n✅ Business hours & contact info\n\nThis is exactly what businesses in Nairobi are using to get more customers. Would you like to activate it? Takes 10 minutes. 🚀`
+  );
+  return `https://wa.me/${business.phone}?text=${message}`;
+}
+
 const LeadManager = ({ onBack }) => {
   const [leads, setLeads] = useState([]);
   const [team, setTeam] = useState([]);
@@ -24,12 +32,15 @@ const LeadManager = ({ onBack }) => {
   const [bulkCount, setBulkCount] = useState(0);
   const [shorteningLeadId, setShorteningLeadId] = useState(null);
   const [bulkShorteningProgress, setBulkShorteningProgress] = useState(null);
+  const [sites, setSites] = useState([]);
+  const [selectedSites, setSelectedSites] = useState(new Set());
 
   // Filters
   const [searchName, setSearchName] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAssigned, setFilterAssigned] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('leads');
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -37,7 +48,13 @@ const LeadManager = ({ onBack }) => {
     const savedTeam = localStorage.getItem('demobuilder_team');
     if (savedLeads) setLeads(JSON.parse(savedLeads));
     if (savedTeam) setTeam(JSON.parse(savedTeam));
+    loadSites();
   }, []);
+
+  const loadSites = async () => {
+    const { data, error } = await supabase.from('demo_sites').select('*').order('created_at', { ascending: false });
+    if (!error) setSites(data || []);
+  };
 
   // Save leads to localStorage
   const saveLeads = (updatedLeads) => {
@@ -180,9 +197,28 @@ const LeadManager = ({ onBack }) => {
     const updated = leads.map((lead) =>
       selectedLeads.has(lead.id) ? { ...lead, status: 'dead' } : lead
     );
-
     saveLeads(updated);
     setSelectedLeads(new Set());
+  };
+
+  const handleBulkDeleteSites = async () => {
+    if (selectedSites.size === 0) return;
+    if (!window.confirm(`Delete ${selectedSites.size} sites permanently?`)) return;
+
+    const { error } = await supabase.from('demo_sites').delete().in('id', Array.from(selectedSites));
+    if (!error) {
+      setSites(sites.filter(s => !selectedSites.has(s.id)));
+      setSelectedSites(new Set());
+    }
+  };
+
+  const handleBulkMarkInactive = async () => {
+    if (selectedSites.size === 0) return;
+    const { error } = await supabase.from('demo_sites').update({ status: 'inactive' }).in('id', Array.from(selectedSites));
+    if (!error) {
+      setSites(sites.map(s => selectedSites.has(s.id) ? { ...s, status: 'inactive' } : s));
+      setSelectedSites(new Set());
+    }
   };
 
   const handleBulkDelete = () => {

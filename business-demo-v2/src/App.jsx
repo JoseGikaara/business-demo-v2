@@ -5,7 +5,6 @@ import DemoSite from './components/DemoSite'
 import BulkGenerator from './components/BulkGenerator'
 import LeadManager from './components/LeadManager'
 import BusinessDashboard from './components/BusinessDashboard'
-import { getFullUrl } from './utils/shortLinks'
 
 function getBusinessFromURL() {
   try {
@@ -87,19 +86,6 @@ function SharedDemoWrapper({ business }) {
 export default function App() {
   const urlBusiness = getBusinessFromURL()
   const isDemo = window.location.hash.length > 1 // Check hash instead of search
-
-  // Handle short link redirects
-  const path = window.location.pathname
-  if (path.startsWith('/d/')) {
-    const slug = path.split('/d/')[1]
-    getFullUrl(slug).then(fullUrl => {
-      window.location.href = fullUrl
-    }).catch(() => {
-      // Handle error, maybe show 404
-    })
-    return <div>Redirecting...</div>
-  }
-
   const [view, setView] = useState(urlBusiness ? 'demo' : 'admin')
   const [business, setBusiness] = useState(urlBusiness || defaultBusiness)
   const [dashBusiness, setDashBusiness] = useState(urlBusiness || defaultBusiness)
