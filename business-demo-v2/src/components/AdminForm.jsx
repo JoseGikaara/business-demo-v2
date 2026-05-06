@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { buildShareableURL } from '../App'
 import { searchBusinesses, getPlaceDetails, mapPlaceToBusinessData } from '../lib/googlePlaces'
+import { saveDemoSite } from '../lib/demoSites'
 
 const CATEGORIES = [
   { value: 'salon', label: '💇 Salon / Barbershop' },
@@ -27,13 +28,16 @@ const lbl = {
 const card = { background: '#1e293b', borderRadius: 12, padding: '24px', marginBottom: 20, border: '1px solid #334155' }
 const cardTitle = { fontSize: 16, fontWeight: 700, color: '#f1f5f9', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid #334155' }
 
-function PlacesSearchPanel({ onAutoFill }) {
+function PlacesSearchPanel({ onAutoFill, onBulkCreate }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [loadingDetail, setLoadingDetail] = useState(null)
   const [error, setError] = useState('')
   const [filled, setFilled] = useState(false)
+  const [buildingAll, setBuildingAll] = useState(false)
+  const [buildProgress, setBuildProgress] = useState(null)
+  const [buildDone, setBuildDone] = useState(0)
 
   const handleSearch = async () => {
     if (!query.trim()) return
@@ -57,6 +61,57 @@ function PlacesSearchPanel({ onAutoFill }) {
     } catch (e) {
       setError('Could not load details: ' + e.message)
     } finally { setLoadingDetail(null) }
+  }
+
+  const handleBuildAll = async () => {
+    if (!results.length) return
+    setBuildingAll(true)
+    setBuildProgress({ current: 0, total: results.length })
+    const created = []
+
+    for (let i = 0; i < results.length; i++) {
+      try {
+        const detail = await getPlaceDetails(results[i].place_id)
+        const mapped = mapPlaceToBusinessData(detail)
+        const fullUrl = buildShareableURL(mapped)
+        const shortUrl = await fetch(
+          `https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`
+        ).then(r => r.text()).catch(() => fullUrl)
+
+        await saveDemoSite({
+          businessName: mapped.name,
+          phone: mapped.phone,
+          category: mapped.category,
+          fullUrl,
+          shortUrl: shortUrl.trim(),
+        })
+
+        created.push({
+          id: crypto.randomUUID(),
+          name: mapped.name,
+          phone: mapped.phone,
+          whatsapp: mapped.whatsapp,
+          category: mapped.category,
+          address: mapped.address,
+          status: 'built',
+          demoUrl: fullUrl,
+          shortUrl: shortUrl.trim(),
+          builtAt: new Date().toISOString(),
+          assignedTo: '',
+        })
+
+        setBuildProgress({ current: i + 1, total: results.length })
+      } catch (e) {
+        console.error('Failed for', results[i].name, e)
+      }
+    }
+
+    onBulkCreate(created)
+    setBuildingAll(false)
+    setBuildProgress(null)
+    setResults([])
+    setBuildDone(created.length)
+    setTimeout(() => setBuildDone(0), 5000)
   }
 
   return (
@@ -98,6 +153,27 @@ function PlacesSearchPanel({ onAutoFill }) {
               </div>
             </button>
           ))}
+        </div>
+      )}
+      {results.length > 1 && (
+        <button
+          onClick={handleBuildAll}
+          disabled={buildingAll}
+          style={{
+            marginTop: 12, width: '100%', padding: '12px',
+            background: buildingAll ? '#334155' : 'linear-gradient(135deg, #f97316, #ef4444)',
+            border: 'none', borderRadius: 8, color: '#fff', fontWeight: 800,
+            fontSize: 14, cursor: buildingAll ? 'default' : 'pointer', fontFamily: 'inherit'
+          }}
+        >
+          {buildingAll
+            ? `⏳ Building ${buildProgress?.current || 0} of ${buildProgress?.total}... please wait`
+            : `⚡ Build All ${results.length} Sites + Get Short URLs`}
+        </button>
+      )}
+      {buildDone > 0 && (
+        <div style={{ marginTop: 10, padding: '10px 14px', background: '#052e16', borderRadius: 8, color: '#4ade80', fontWeight: 600, fontSize: 13 }}>
+          ✅ {buildDone} sites built and saved! Check Lead Manager → Sites tab.
         </div>
       )}
       <div style={{ marginTop: 10, fontSize: 11, color: '#334155' }}>💡 Requires GOOGLE_PLACES_KEY in Vercel environment variables</div>
@@ -157,7 +233,13 @@ export default function AdminForm({ business, onChange, onPreview, onBulk }) {
         <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9', margin: '0 0 8px' }} className="admin-title">Business Details</h1>
         <div style={{ marginBottom: 28, color: '#94a3b8', fontSize: 14 }}>Search Google Maps to auto-fill → review details → generate link → send via WhatsApp.</div>
 
-        <PlacesSearchPanel onAutoFill={handleAutoFill} />
+        <PlacesSearchPanel
+          onAutoFill={handleAutoFill}
+          onBulkCreate={(newLeads) => {
+            const existing = JSON.parse(localStorage.getItem('demobuilder_leads') || '[]')
+            localStorage.setItem('demobuilder_leads', JSON.stringify([...existing, ...newLeads]))
+          }}
+        />
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 24, background: '#0f172a', padding: 8, borderRadius: 10, border: '1px solid #1e293b', flexWrap: 'wrap' }} className="admin-tabs">
           {tabs.map(tab => (

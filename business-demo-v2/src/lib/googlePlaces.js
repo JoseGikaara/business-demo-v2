@@ -40,8 +40,15 @@ export async function getPlaceDetails(placeId) {
 // Map Google Places result → our business data shape
 export function mapPlaceToBusinessData(place) {
   const phone = place.international_phone_number || place.formatted_phone_number || ''
-  // Strip non-digits for whatsapp field
-  const whatsapp = phone.replace(/\D/g, '')
+  // Try international number first, fall back to formatted, then strip and prefix with 254
+  const rawPhone = place.international_phone_number || place.formatted_phone_number || ''
+  const digits = rawPhone.replace(/\D/g, '')
+  // If starts with 0, replace with 254 (Kenya). If starts with +, just strip the +
+  const whatsapp = digits.startsWith('0')
+    ? '254' + digits.slice(1)
+    : digits.startsWith('254')
+    ? digits
+    : digits
 
   // Parse opening hours
   let hours = ''
@@ -75,7 +82,7 @@ export function mapPlaceToBusinessData(place) {
 
   // Get Google Maps search string from formatted_address or name
   const mapSearch = place.name && place.formatted_address
-    ? `${place.name} ${place.formatted_address.split(',').slice(0, 2).join(',')}`
+    ? `${place.name}, ${place.formatted_address}`
     : place.name || ''
 
   // Pull up to 3 reviews
