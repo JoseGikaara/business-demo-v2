@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { getTemplate } from '../templates'
 
 const GIKS_WHATSAPP = '254116239739'
 
@@ -728,14 +729,14 @@ function SocialFeed({ business, primary, accent, stockImages }) {
 }
 
 // ─── FAQ + Chatbot ────────────────────────────────────────────────────────────
-function FAQAndChat({ business, primary, accent }) {
+function FAQAndChat({ business, primary, accent, chatbotQA = [] }) {
   const [open, setOpen] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [messages, setMessages] = useState([{ from: 'bot', text: `Hi! 👋 I'm here to answer questions about ${business.name}. What would you like to know?` }])
   const [input, setInput] = useState('')
   const chatRef = useRef(null)
   const faqs = business.faqs || []
-  const qaBank = CHATBOT_QA[business.category] || CHATBOT_QA.other
+  const qaBank = chatbotQA
 
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
@@ -996,8 +997,9 @@ function SectionHeader({ label, title, sub, primary, extra }) {
 export default function DemoSite({ business, onBack, isSharedView = false, isDemo = false, onDashboard }) {
   const primary = business.primaryColor || '#0ea5e9'
   const accent = business.accentColor || '#06b6d4'
-  const stock = getStock(business.category)
-  const marqueeWords = MARQUEE_WORDS[business.category] || MARQUEE_WORDS.other
+  const siteTemplate = getTemplate(business.category)
+  const stock = siteTemplate
+  const marqueeWords = siteTemplate.marqueeWords || []
 
   return (
     <div style={{ fontFamily: "'Outfit', sans-serif", background: '#020617', color: '#e2e8f0', minHeight: '100vh' }}>
@@ -1033,7 +1035,7 @@ export default function DemoSite({ business, onBack, isSharedView = false, isDem
       {business.showBooking && <BookingForm business={business} primary={primary} accent={accent} />}
       <Reviews business={business} primary={primary} accent={accent} />
       <SocialFeed business={business} primary={primary} accent={accent} stockImages={stock.gallery} />
-      <FAQAndChat business={business} primary={primary} accent={accent} />
+      <FAQAndChat business={business} primary={primary} accent={accent} chatbotQA={siteTemplate.chatbotQA} />
       <WhyWebsite business={business} primary={primary} accent={accent} />
       <Contact business={business} primary={primary} accent={accent} />
       <Footer business={business} primary={primary} />

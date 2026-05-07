@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
+import { supabase } from '../lib/supabase';
+import Table from './ui/Table'
+import StatusBadge from './ui/StatusBadge'
 
 // URL Shortening function
 async function shortenURL(longUrl) {
@@ -40,13 +42,16 @@ const LeadManager = ({ onBack }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAssigned, setFilterAssigned] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [filterScore, setFilterScore] = useState('all');
+  const [sortBy, setSortBy] = useState('none');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [activeTab, setActiveTab] = useState('leads');
 
   // Load data from localStorage on mount
   useEffect(() => {
     const savedLeads = localStorage.getItem('demobuilder_leads');
     const savedTeam = localStorage.getItem('demobuilder_team');
-    if (savedLeads) setLeads(JSON.parse(savedLeads));
+    if (savedLeads) setLeads(JSON.parse(savedLeads).map(normalizeLead));
     if (savedTeam) setTeam(JSON.parse(savedTeam));
     loadSites();
   }, []);
@@ -58,8 +63,9 @@ const LeadManager = ({ onBack }) => {
 
   // Save leads to localStorage
   const saveLeads = (updatedLeads) => {
-    setLeads(updatedLeads);
-    localStorage.setItem('demobuilder_leads', JSON.stringify(updatedLeads));
+    const normalized = updatedLeads.map(normalizeLead);
+    setLeads(normalized);
+    localStorage.setItem('demobuilder_leads', JSON.stringify(normalized));
   };
 
   // Save team to localStorage
@@ -98,7 +104,7 @@ const LeadManager = ({ onBack }) => {
 
         if (!name) return null;
 
-        return {
+        const lead = {
           id: crypto.randomUUID(),
           name,
           phone: phone || '',
@@ -115,6 +121,8 @@ const LeadManager = ({ onBack }) => {
           createdAt: new Date().toISOString(),
           builtAt: null,
         };
+
+        return normalizeLead(lead);
       })
       .filter(Boolean);
 
@@ -160,8 +168,20 @@ const LeadManager = ({ onBack }) => {
     const statusMatch = filterStatus === 'all' || lead.status === filterStatus;
     const assignedMatch = filterAssigned === 'all' || lead.assignedTo === filterAssigned;
     const categoryMatch = filterCategory === 'all' || lead.category === filterCategory;
-    return nameMatch && statusMatch && assignedMatch && categoryMatch;
+    const scoreMatch = filterScore === 'all' || lead.lead_score === filterScore;
+    return nameMatch && statusMatch && assignedMatch && categoryMatch && scoreMatch;
   });
+
+  const sortedLeads = [...filteredLeads];
+  if (sortBy === 'score') {
+    sortedLeads.sort((a, b) => {
+      const diff = getLeadScoreValue(b.lead_score) - getLeadScoreValue(a.lead_score);
+      const result = sortDirection === 'desc' ? diff : -diff;
+      return result !== 0 ? result : a.name.localeCompare(b.name);
+    });
+  }
+
+  const visibleLeads = sortedLeads;
 
   // Count leads by status
   const counts = {
@@ -176,6 +196,48 @@ const LeadManager = ({ onBack }) => {
 
   // Get unique categories
   const categories = [...new Set(leads.map((l) => l.category).filter(Boolean))];
+
+  const getLeadScoreValue = (score) => {
+    if (score === 'hot') return 3;
+    if (score === 'warm') return 2;
+    if (score === 'low') return 1;
+    return 0;
+  };
+
+  const evaluateLeadScore = (lead) => {
+    const phoneValue = (lead.phone || lead.whatsapp || '').trim();
+    const hasPhone = !!phoneValue;
+    const websiteValue = (lead.website || '').trim();
+    const facebookValue = (lead.facebookUrl || lead.instagramUrl || '').trim();
+    const hasWebsite = !!websiteValue;
+    const isSocialOnlyWebsite = /facebook\.com|instagram\.com|fb\.me|linktr\.ee|tinyurl\.com|bit\.ly|goo\.gl/i.test(websiteValue);
+
+    if (!hasPhone) {
+      return 'low';
+    }
+
+    if (!hasWebsite) {
+      return facebookValue ? 'warm' : 'hot';
+    }
+
+    if (isSocialOnlyWebsite) {
+      return 'warm';
+    }
+
+    return 'warm';
+  };
+
+  const normalizeLead = (lead) => ({
+    ...lead,
+    lead_score: evaluateLeadScore(lead),
+  });
+
+  const getScoreMeta = (score) => {
+    if (score === 'hot') return { label: 'Hot', background: '#dc2626', color: '#fff' };
+    if (score === 'warm') return { label: 'Warm', background: '#f59e0b', color: '#020617' };
+    if (score === 'low') return { label: 'Low', background: '#334155', color: '#cbd5e1' };
+    return { label: 'Unknown', background: '#334155', color: '#cbd5e1' };
+  };
 
   // Bulk actions
   const handleBulkAssign = () => {
@@ -233,7 +295,7 @@ const LeadManager = ({ onBack }) => {
   // Update lead
   const updateLead = (id, updates) => {
     const updated = leads.map((lead) =>
-      lead.id === id ? { ...lead, ...updates } : lead
+      lead.id === id ? normalizeLead({ ...lead, ...updates }) : lead
     );
     saveLeads(updated);
   };
@@ -296,10 +358,10 @@ const LeadManager = ({ onBack }) => {
 
   // Select all visible
   const toggleSelectAll = () => {
-    if (selectedLeads.size === filteredLeads.length) {
+    if (selectedLeads.size === visibleLeads.length) {
       setSelectedLeads(new Set());
     } else {
-      setSelectedLeads(new Set(filteredLeads.map((l) => l.id)));
+      setSelectedLeads(new Set(visibleLeads.map((l) => l.id)));
     }
   };
 
@@ -624,6 +686,32 @@ const LeadManager = ({ onBack }) => {
               </option>
             ))}
           </select>
+          <select
+            value={filterScore}
+            onChange={(e) => setFilterScore(e.target.value)}
+            style={inputStyle}
+          >
+            <option value="all">All Scores</option>
+            <option value="hot">Hot</option>
+            <option value="warm">Warm</option>
+            <option value="low">Low Quality</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={inputStyle}
+          >
+            <option value="none">Sort by</option>
+            <option value="score">Score</option>
+          </select>
+          <select
+            value={sortDirection}
+            onChange={(e) => setSortDirection(e.target.value)}
+            style={inputStyle}
+          >
+            <option value="desc">Desc</option>
+            <option value="asc">Asc</option>
+          </select>
         </div>
       </div>
 
@@ -735,7 +823,7 @@ const LeadManager = ({ onBack }) => {
 
       {/* LEADS TABLE */}
       <div style={{ overflowX: 'auto' }}>
-        {filteredLeads.length === 0 ? (
+        {visibleLeads.length === 0 ? (
           <div
             style={{
               ...cardStyle,
@@ -764,7 +852,7 @@ const LeadManager = ({ onBack }) => {
                 <th style={{ padding: '12px', textAlign: 'left', width: '40px' }}>
                   <input
                     type="checkbox"
-                    checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
+                    checked={selectedLeads.size === visibleLeads.length && visibleLeads.length > 0}
                     onChange={toggleSelectAll}
                     style={{ cursor: 'pointer', width: '18px', height: '18px' }}
                   />
@@ -772,6 +860,7 @@ const LeadManager = ({ onBack }) => {
                 <th style={{ padding: '12px', textAlign: 'left' }}>Business Name</th>
                 <th style={{ padding: '12px', textAlign: 'left' }}>Category</th>
                 <th style={{ padding: '12px', textAlign: 'left' }}>Location</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Score</th>
                 <th style={{ padding: '12px', textAlign: 'left' }}>Assigned To</th>
                 <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
                 <th style={{ padding: '12px', textAlign: 'left' }}>Demo URL</th>
@@ -779,7 +868,7 @@ const LeadManager = ({ onBack }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredLeads.map((lead) => (
+              {visibleLeads.map((lead) => (
                 <tr
                   key={lead.id}
                   style={{
@@ -803,6 +892,25 @@ const LeadManager = ({ onBack }) => {
                   </td>
                   <td style={{ padding: '12px', textAlign: 'left', color: '#cbd5e1' }}>
                     {lead.address || '—'}
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'left' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '6px 12px',
+                        borderRadius: '999px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        backgroundColor: getScoreMeta(lead.lead_score).background,
+                        color: getScoreMeta(lead.lead_score).color,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {getScoreMeta(lead.lead_score).label}
+                    </span>
                   </td>
                   <td style={{ padding: '12px', textAlign: 'left' }}>
                     <select

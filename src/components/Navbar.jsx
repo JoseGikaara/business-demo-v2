@@ -1,6 +1,7 @@
 export default function Navbar({ activeView, onViewChange }) {
   const views = [
     { id: 'admin', label: '🏗️ Builder', color: '#0ea5e9' },
+    { id: 'bulk', label: '📦 Bulk', color: '#22c55e' },
     { id: 'leads', label: '📋 Leads & CRM', color: '#8b5cf6' },
   ]
 

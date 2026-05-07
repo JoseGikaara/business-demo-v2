@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { buildShareableURL } from '../App'
-import { searchBusiness, getPlaceDetails } from '../utils/googlePlaces'
+import { searchBusiness, getPlaceDetails } from '../lib/googlePlaces'
+import { buildStaticSiteHtml, ensureUniqueSubdomain, generateSubdomainFromName, getDeploymentUrl, loadDeploymentByBusinessName, saveDeploymentSite } from '../lib/demoSites'
 
 // ── Category templates (from BulkGenerator) ──────────────────────────────────
 const CATEGORY_DEFAULTS = {
@@ -54,8 +55,9 @@ function normalisePhone(raw = '') {
 }
 
 function placeToLead(placeData) {
-  const phone = placeData.formatted_phone_number || placeData.international_phone_number || ''
-  const whatsapp = normalisePhone(placeData.international_phone_number || placeData.formatted_phone_number || '')
+  const normalizedPhone = normalisePhone(placeData.international_phone_number || placeData.formatted_phone_number || '')
+  const phone = normalizedPhone
+  const whatsapp = normalizedPhone
   const category = guessCategory(placeData.types)
   const defaults = CATEGORY_DEFAULTS[category] || CATEGORY_DEFAULTS.other
   const address = placeData.formatted_address || placeData.vicinity || ''
@@ -237,6 +239,14 @@ function SearchPanel({ onAddToLeads }) {
 export default function AdminForm({ business, onChange, onPreview, onGoToLeads }) {
   const [activeTab, setActiveTab] = useState('basics')
   const [copied, setCopied] = useState(false)
+  const [subdomain, setSubdomain] = useState(() => generateSubdomainFromName(business.name))
+  const [deploymentBaseDomain, setDeploymentBaseDomain] = useState(import.meta.env.VITE_DEPLOYMENT_BASE_DOMAIN || 'mydomain.com')
+  const [deploymentStatus, setDeploymentStatus] = useState('draft')
+  const [deploymentRecord, setDeploymentRecord] = useState(null)
+  const [deploying, setDeploying] = useState(false)
+  const [deployError, setDeployError] = useState('')
+  const [liveUrl, setLiveUrl] = useState('')
+  const [staticHtml, setStaticHtml] = useState('')
 
   const handleAddToLeads = (newLeads) => {
     const existing = JSON.parse(localStorage.getItem('demobuilder_leads') || '[]')
@@ -244,6 +254,97 @@ export default function AdminForm({ business, onChange, onPreview, onGoToLeads }
     const existingKeys = new Set(existing.map(l => `${l.name}|${l.phone}`))
     const fresh = newLeads.filter(l => !existingKeys.has(`${l.name}|${l.phone}`))
     localStorage.setItem('demobuilder_leads', JSON.stringify([...existing, ...fresh]))
+  }
+
+  useEffect(() => {
+    const nextSubdomain = generateSubdomainFromName(business.name)
+    setSubdomain(prev => {
+      if (!prev || prev === generateSubdomainFromName(business.name) || prev.startsWith('demo-')) {
+        return nextSubdomain
+      }
+      return prev
+    })
+  }, [business.name])
+
+  useEffect(() => {
+    let active = true
+    if (!business.name.trim()) {
+      setDeploymentRecord(null)
+      return
+    }
+
+    const fetchDeployment = async () => {
+      const { data, error } = await loadDeploymentByBusinessName(business.name)
+      if (!active) return
+      if (!error && data) {
+        setDeploymentRecord(data)
+        setDeploymentStatus(data.deployment_status || 'draft')
+        setLiveUrl(getDeploymentUrl(data.subdomain, deploymentBaseDomain))
+      }
+    }
+
+    fetchDeployment()
+    return () => { active = false }
+  }, [business.name, deploymentBaseDomain])
+
+  const createDeploymentSubdomain = async () => {
+    const base = generateSubdomainFromName(business.name)
+    const unique = await ensureUniqueSubdomain(base)
+    setSubdomain(unique)
+    setDeploymentStatus('draft')
+    setLiveUrl(getDeploymentUrl(unique, deploymentBaseDomain))
+    setDeployError('')
+  }
+
+  const downloadStaticPage = () => {
+    const html = staticHtml || buildStaticSiteHtml(business, subdomain, deploymentBaseDomain)
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${subdomain || 'demo-site'}.html`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setStaticHtml(html)
+  }
+
+  const deploySite = async () => {
+    if (!business.name.trim() || !subdomain.trim()) {
+      setDeployError('Business name and subdomain are required.')
+      return
+    }
+
+    setDeployError('')
+    setDeploying(true)
+    setDeploymentStatus('building')
+
+    const html = buildStaticSiteHtml(business, subdomain, deploymentBaseDomain)
+    setStaticHtml(html)
+
+    const { data, error } = await saveDeploymentSite({
+      leadId: null,
+      businessName: business.name,
+      phone: business.phone,
+      category: business.category,
+      fullUrl: buildShareableURL(business),
+      shortUrl: '',
+      subdomain,
+      staticHtml: html,
+      deploymentStatus: 'deployed',
+    })
+
+    if (error) {
+      setDeployError(error.message || 'Failed to save deployment')
+      setDeploymentStatus('failed')
+    } else {
+      setDeploymentRecord(data)
+      setDeploymentStatus('deployed')
+      setLiveUrl(getDeploymentUrl(subdomain, deploymentBaseDomain))
+    }
+
+    setDeploying(false)
   }
 
   const generateLink = () => {
@@ -291,6 +392,41 @@ export default function AdminForm({ business, onChange, onPreview, onGoToLeads }
               {tabLabels[tab]}
             </button>
           ))}
+        </div>
+
+        <div style={{ ...card, background: '#081233', border: '1px solid #1a2d4b' }}>
+          <div style={cardTitle}>Static Deployment</div>
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="grid-2col">
+              <div>
+                <label style={lbl}>Deployment Subdomain</label>
+                <input style={inp} value={subdomain} onChange={e => setSubdomain(e.target.value)} placeholder="mikesbarber" />
+                <div style={{ marginTop: 8, color: '#94a3b8', fontSize: 12 }}>The site will be available at <strong>{subdomain || 'your-subdomain'}.{deploymentBaseDomain}</strong></div>
+              </div>
+              <div>
+                <label style={lbl}>Base Domain</label>
+                <input style={inp} value={deploymentBaseDomain} onChange={e => setDeploymentBaseDomain(e.target.value)} placeholder="mydomain.com" />
+                <div style={{ marginTop: 8, color: '#94a3b8', fontSize: 12 }}>Use the root domain for your static deployment.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              <button onClick={createDeploymentSubdomain} style={{ flex: 1, minWidth: 160, padding: '14px 18px', background: '#0ea5e9', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 700 }}>Generate Unique Subdomain</button>
+              <button onClick={downloadStaticPage} style={{ flex: 1, minWidth: 160, padding: '14px 18px', background: '#16a34a', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 700 }}>Download Static Page</button>
+              <button onClick={deploySite} disabled={deploying} style={{ flex: 1, minWidth: 160, padding: '14px 18px', background: deploying ? '#334155' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: 'none', borderRadius: 12, color: '#fff', cursor: deploying ? 'default' : 'pointer', fontWeight: 700 }}>
+                {deploying ? 'Deploying…' : 'Deploy to Supabase'}
+              </button>
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ color: '#94a3b8', fontSize: 13 }}><strong>Status:</strong> <span style={{ color: deploymentStatus === 'deployed' ? '#4ade80' : deploymentStatus === 'failed' ? '#f87171' : deploymentStatus === 'building' ? '#fbbf24' : '#c7d2fe' }}>{deploymentStatus}</span></div>
+              {liveUrl && (
+                <div style={{ fontSize: 13, color: '#e2e8f0' }}>Live URL: <a href={liveUrl} target="_blank" style={{ color: '#60a5fa', textDecoration: 'underline' }}>{liveUrl}</a></div>
+              )}
+              {deploymentRecord && (
+                <div style={{ fontSize: 13, color: '#94a3b8' }}>Existing deployment record loaded from Supabase. Created at {new Date(deploymentRecord.created_at).toLocaleString()}.</div>
+              )}
+              {deployError && <div style={{ color: '#f87171', fontSize: 13 }}>{deployError}</div>}
+            </div>
+          </div>
         </div>
 
         {/* BASICS */}

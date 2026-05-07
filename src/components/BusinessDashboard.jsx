@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { getDeploymentUrl, loadDeploymentByBusinessName } from '../lib/demoSites'
 
 const GIKS_WA = '254116239739'
 
@@ -46,6 +47,23 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
   const [selectedSegment, setSelectedSegment] = useState('All Customers')
   const [toast, setToast] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [deploymentInfo, setDeploymentInfo] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    if (!business?.name) return
+
+    const loadDeployment = async () => {
+      const { data, error } = await loadDeploymentByBusinessName(business.name)
+      if (!active) return
+      if (!error && data) {
+        setDeploymentInfo(data)
+      }
+    }
+
+    loadDeployment()
+    return () => { active = false }
+  }, [business?.name])
 
   const tabs = [
     { id:'overview', label:'Overview', icon:'📊' },
@@ -373,6 +391,18 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
   const renderWebsite = () => (
     <div>
       <h2 style={{color:'#fff', margin:'0 0 24px 0', fontSize:'24px'}}>Edit Your Website</h2>
+      {deploymentInfo && (
+        <div style={{ marginBottom: 20, padding: 20, borderRadius: 14, background: '#081826', border: '1px solid #1e293b', color: '#e2e8f0' }}>
+          <div style={{ marginBottom: 10, fontWeight: 700 }}>Deployment status</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            <span style={{ color: '#94a3b8' }}>Subdomain:</span>
+            <span style={{ color: '#fff', fontWeight: 600 }}>{deploymentInfo.subdomain || 'n/a'}</span>
+            <span style={{ color: '#94a3b8' }}>Status:</span>
+            <span style={{ color: deploymentInfo.deployment_status === 'deployed' ? '#4ade80' : deploymentInfo.deployment_status === 'building' ? '#facc15' : deploymentInfo.deployment_status === 'failed' ? '#f87171' : '#c7d2fe' }}>{deploymentInfo.deployment_status || 'draft'}</span>
+            {deploymentInfo.subdomain && <a href={getDeploymentUrl(deploymentInfo.subdomain)} target="_blank" style={{ color: '#60a5fa', textDecoration: 'underline' }}>View live site</a>}
+          </div>
+        </div>
+      )}
       <div style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', padding:'24px', marginBottom:'24px'}}>
         {[
           { label:'Business Name', value:business?.name||'' },

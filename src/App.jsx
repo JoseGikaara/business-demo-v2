@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Navbar from './components/Navbar'
 import AdminForm from './components/AdminForm'
+import BulkGenerator from './components/BulkGenerator'
 import DemoSite from './components/DemoSite'
 import LeadManager from './components/LeadManager'
 import BusinessDashboard from './components/BusinessDashboard'
@@ -89,9 +90,11 @@ export default function App() {
             business={business}
             onChange={setBusiness}
             onPreview={() => setView('demo')}
+            onBulk={() => setView('bulk')}
             onGoToLeads={() => setView('leads')}
           />
         )}
+        {view === 'bulk' && <BulkGenerator onBack={() => setView('admin')} />}
         {view === 'demo' && (
           <DemoSite business={business} onBack={() => setView('admin')} isSharedView={false} isDemo={false} onDashboard={() => setView('dashboard')} />
         )}
