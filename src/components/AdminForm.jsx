@@ -123,7 +123,7 @@ function SearchPanel({ onAddToLeads }) {
     setSearching(true); setError(''); setResults([]); setSelected(new Set())
     try {
       const data = await searchBusiness(query)
-      const places = data.results || []
+      const places = data || []
       setResults(places)
       if (places.length === 0) setError('No results found. Try a different search.')
     } catch (e) {
@@ -150,7 +150,7 @@ function SearchPanel({ onAddToLeads }) {
       for (const place of toAdd) {
         try {
           const detail = await getPlaceDetails(place.place_id)
-          leads.push(placeToLead(detail.result || place))
+          leads.push(placeToLead(detail || place))
         } catch {
           // Fallback to basic data if details fail
           leads.push(placeToLead(place))
