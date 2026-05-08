@@ -74,6 +74,8 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
     { id:'broadcast', label:'Broadcast', icon:'📢' },
     { id:'website', label:'Website', icon:'🌐' },
     { id:'upgrade', label:'Upgrade', icon:'🚀' },
+    { id:'gmb', label:'GMB', icon:'📍' },
+    { id:'social', label:'Social', icon:'📱' },
   ]
 
   const filteredCustomers = FAKE_CUSTOMERS.filter(c => 
@@ -482,6 +484,99 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
     </div>
   )
 
+
+  const renderGMB = () => (
+    <div>
+      <div style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'16px', padding:'28px', marginBottom:'20px'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'14px', marginBottom:'8px'}}>
+          <div style={{fontSize:'32px'}}>📍</div>
+          <div>
+            <h2 style={{margin:0, fontSize:'20px', fontWeight:'700'}}>Google My Business Optimization</h2>
+            <p style={{margin:'4px 0 0', color:'#64748b', fontSize:'14px'}}>Coming Soon — Get found first when customers search nearby</p>
+          </div>
+        </div>
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:'16px', marginBottom:'20px'}}>
+        {[
+          { icon:'⭐', title:'Review Management', desc:'Respond to Google reviews, flag spam, and build your star rating automatically.' },
+          { icon:'📸', title:'Photo Optimization', desc:'Upload high-quality photos of your business, services, and team to attract more clicks.' },
+          { icon:'🗂️', title:'Business Info Sync', desc:'Keep your name, address, phone, and hours accurate across Google and maps.' },
+          { icon:'📊', title:'Insights & Analytics', desc:'See how many people found you on Google Search and Maps each month.' },
+          { icon:'📝', title:'Post Updates', desc:'Share offers, events, and news directly on your Google profile.' },
+          { icon:'🔑', title:'Keyword Optimization', desc:'Add the right categories and keywords so you rank above competitors.' },
+        ].map((item, i) => (
+          <div key={i} style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', padding:'20px'}}>
+            <div style={{fontSize:'28px', marginBottom:'10px'}}>{item.icon}</div>
+            <div style={{fontWeight:'700', fontSize:'15px', marginBottom:'6px'}}>{item.title}</div>
+            <div style={{color:'#64748b', fontSize:'13px', lineHeight:'1.6'}}>{item.desc}</div>
+            <div style={{marginTop:'14px', display:'inline-block', background:'#1e293b', border:'1px solid #334155', borderRadius:'6px', padding:'6px 14px', fontSize:'12px', color:'#94a3b8'}}>Coming Soon</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:'linear-gradient(135deg, #0ea5e920, #06b6d420)', border:'1px solid #0ea5e940', borderRadius:'12px', padding:'20px', textAlign:'center'}}>
+        <div style={{fontSize:'18px', fontWeight:'700', marginBottom:'6px'}}>Want this activated for your business?</div>
+        <div style={{color:'#94a3b8', fontSize:'14px', marginBottom:'16px'}}>Our team handles your entire GMB profile so you rank higher and get more walk-ins.</div>
+        <a href="https://wa.me/254700000000" target="_blank" rel="noreferrer" style={{background:'linear-gradient(135deg, #0ea5e9, #06b6d4)', border:'none', borderRadius:'8px', padding:'12px 28px', color:'#fff', fontWeight:'700', fontSize:'14px', cursor:'pointer', textDecoration:'none', display:'inline-block'}}>
+          📞 Talk to Us on WhatsApp
+        </a>
+      </div>
+    </div>
+  )
+
+  const renderSocial = () => (
+    <div>
+      <div style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'16px', padding:'28px', marginBottom:'20px'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'14px', marginBottom:'8px'}}>
+          <div style={{fontSize:'32px'}}>📱</div>
+          <div>
+            <h2 style={{margin:0, fontSize:'20px', fontWeight:'700'}}>Social Media Marketing</h2>
+            <p style={{margin:'4px 0 0', color:'#64748b', fontSize:'14px'}}>Coming Soon — Grow your audience on Facebook and Instagram</p>
+          </div>
+        </div>
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:'16px', marginBottom:'20px'}}>
+        {[
+          { icon:'🎨', title:'Content Creation', desc:'Professional posts, stories, and reels designed for your business niche every week.' },
+          { icon:'📅', title:'Content Calendar', desc:'Planned and scheduled posts so your pages stay active without the stress.' },
+          { icon:'💬', title:'Community Management', desc:'Respond to comments and DMs on your behalf to build customer relationships.' },
+          { icon:'📈', title:'Paid Ads Management', desc:'Run targeted Facebook and Instagram ads to reach customers in your area.' },
+          { icon:'🔍', title:'Competitor Analysis', desc:'See what top competitors post and what is working in your local market.' },
+          { icon:'📊', title:'Monthly Reports', desc:'Clear reports showing follower growth, reach, engagement, and leads generated.' },
+        ].map((item, i) => (
+          <div key={i} style={{background:'#0f172a', border:'1px solid #1e293b', borderRadius:'12px', padding:'20px'}}>
+            <div style={{fontSize:'28px', marginBottom:'10px'}}>{item.icon}</div>
+            <div style={{fontWeight:'700', fontSize:'15px', marginBottom:'6px'}}>{item.title}</div>
+            <div style={{color:'#64748b', fontSize:'13px', lineHeight:'1.6'}}>{item.desc}</div>
+            <div style={{marginTop:'14px', display:'inline-block', background:'#1e293b', border:'1px solid #334155', borderRadius:'6px', padding:'6px 14px', fontSize:'12px', color:'#94a3b8'}}>Coming Soon</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'12px', marginBottom:'20px'}}>
+        {[
+          { platform:'Facebook', icon:'📘', color:'#1877f2', desc:'Page setup, posting, and ads' },
+          { platform:'Instagram', icon:'📸', color:'#e1306c', desc:'Feed, stories, and reels' },
+          { platform:'TikTok', icon:'🎵', color:'#010101', desc:'Short video content' },
+          { platform:'WhatsApp', icon:'💬', color:'#25d366', desc:'Broadcast lists and status' },
+        ].map((p, i) => (
+          <div key={i} style={{background:'#0f172a', border:`1px solid ${p.color}40`, borderRadius:'10px', padding:'16px', display:'flex', alignItems:'center', gap:'12px'}}>
+            <div style={{fontSize:'24px'}}>{p.icon}</div>
+            <div>
+              <div style={{fontWeight:'700', fontSize:'14px'}}>{p.platform}</div>
+              <div style={{color:'#64748b', fontSize:'12px'}}>{p.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:'linear-gradient(135deg, #8b5cf620, #7c3aed20)', border:'1px solid #8b5cf640', borderRadius:'12px', padding:'20px', textAlign:'center'}}>
+        <div style={{fontSize:'18px', fontWeight:'700', marginBottom:'6px'}}>Ready to grow your social media?</div>
+        <div style={{color:'#94a3b8', fontSize:'14px', marginBottom:'16px'}}>We create content, run ads, and manage your pages so you can focus on your customers.</div>
+        <a href="https://wa.me/254700000000" target="_blank" rel="noreferrer" style={{background:'linear-gradient(135deg, #8b5cf6, #7c3aed)', border:'none', borderRadius:'8px', padding:'12px 28px', color:'#fff', fontWeight:'700', fontSize:'14px', cursor:'pointer', textDecoration:'none', display:'inline-block'}}>
+          📞 Talk to Us on WhatsApp
+        </a>
+      </div>
+    </div>
+  )
+
   const renderContent = () => {
     switch(activeTab) {
       case 'overview': return renderOverview()
@@ -492,6 +587,8 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
       case 'broadcast': return renderBroadcast()
       case 'website': return renderWebsite()
       case 'upgrade': return renderUpgrade()
+      case 'gmb': return renderGMB()
+      case 'social': return renderSocial()
       default: return renderOverview()
     }
   }
