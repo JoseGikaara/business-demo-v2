@@ -109,9 +109,8 @@ const card = { background: '#1e293b', borderRadius: 12, padding: 24, marginBotto
 const cardTitle = { fontSize: 16, fontWeight: 700, color: '#f1f5f9', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid #334155' }
 
 // ── Google Search + Queue Panel ───────────────────────────────────────────────
-function SearchPanel({ onAddToLeads, onSendToBulk, onGoToBulk }) {
-  const [businessType, setBusinessType] = useState('')
-  const [location, setLocation] = useState('')
+function SearchPanel({ onAddToLeads }) {
+  const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [selected, setSelected] = useState(new Set())
   const [searching, setSearching] = useState(false)
@@ -120,11 +119,11 @@ function SearchPanel({ onAddToLeads, onSendToBulk, onGoToBulk }) {
   const [added, setAdded] = useState(0)
 
   const handleSearch = async () => {
-    if (!businessType.trim() || !location.trim()) return
+    if (!query.trim()) return
     setSearching(true); setError(''); setResults([]); setSelected(new Set())
     try {
-      const data = await searchBusiness(`${businessType} in ${location}`)
-      const places = data || []
+      const data = await searchBusiness(query)
+      const places = Array.isArray(data) ? data : (data.results || [])
       setResults(places)
       if (places.length === 0) setError('No results found. Try a different search.')
     } catch (e) {
@@ -142,22 +141,25 @@ function SearchPanel({ onAddToLeads, onSendToBulk, onGoToBulk }) {
     setSelected(selected.size === results.length ? new Set() : new Set(results.map(p => p.place_id)))
   }
 
-  const handleSendToBulk = async () => {
-    const toSend = results.filter(p => selected.has(p.place_id))
-    if (!toSend.length) return
+  const handleAddSelected = async () => {
+    const toAdd = results.filter(p => selected.has(p.place_id))
+    if (!toAdd.length) return
     setLoadingDetails(true); setError('')
     try {
       const leads = []
-      for (const place of toSend) {
+      for (const place of toAdd) {
         try {
           const detail = await getPlaceDetails(place.place_id)
-          leads.push(placeToLead(detail || place))
+          leads.push(placeToLead(detail?.result || detail || place))
         } catch {
+          // Fallback to basic data if details fail
           leads.push(placeToLead(place))
         }
       }
-      onSendToBulk(leads)
-      onGoToBulk()
+      onAddToLeads(leads)
+      setAdded(leads.length)
+      setResults([]); setSelected(new Set()); setQuery('')
+      setTimeout(() => setAdded(0), 4000)
     } catch (e) {
       setError('Failed to load business details: ' + e.message)
     } finally { setLoadingDetails(false) }
@@ -175,13 +177,10 @@ function SearchPanel({ onAddToLeads, onSendToBulk, onGoToBulk }) {
 
       {/* Search bar */}
       <div style={{ display: 'flex', gap: 10 }}>
-        <input style={{ ...inp, flex: 1 }} value={businessType} onChange={e => setBusinessType(e.target.value)}
+        <input style={{ ...inp, flex: 1 }} value={query} onChange={e => setQuery(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          placeholder="Business type e.g. barbershop, salon, restaurant" />
-        <input style={{ ...inp, flex: 1 }} value={location} onChange={e => setLocation(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          placeholder="Location e.g. Westlands Nairobi, Mombasa" />
-        <button onClick={handleSearch} disabled={searching || !businessType.trim() || !location.trim()} style={{ background: searching || !businessType.trim() || !location.trim() ? '#334155' : 'linear-gradient(135deg, #0ea5e9, #06b6d4)', border: 'none', borderRadius: 8, padding: '10px 22px', color: '#fff', fontWeight: 700, fontSize: 14, cursor: searching || !businessType.trim() || !location.trim() ? 'default' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
+          placeholder="e.g. salons Westlands Nairobi  or  restaurants Karen" />
+        <button onClick={handleSearch} disabled={searching} style={{ background: searching ? '#334155' : 'linear-gradient(135deg, #0ea5e9, #06b6d4)', border: 'none', borderRadius: 8, padding: '10px 22px', color: '#fff', fontWeight: 700, fontSize: 14, cursor: searching ? 'default' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
           {searching ? '⏳ Searching...' : '🔍 Search'}
         </button>
       </div>
@@ -225,14 +224,9 @@ function SearchPanel({ onAddToLeads, onSendToBulk, onGoToBulk }) {
 
           {/* Add button */}
           {selected.size > 0 && (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={handleAddSelected} disabled={loadingDetails} style={{ flex: 1, padding: 14, background: loadingDetails ? '#334155' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 15, cursor: loadingDetails ? 'default' : 'pointer', fontFamily: 'inherit' }}>
-                {loadingDetails ? '⏳ Fetching business details...' : `➕ Add ${selected.size} Business${selected.size > 1 ? 'es' : ''} to Leads`}
-              </button>
-              <button onClick={handleSendToBulk} disabled={loadingDetails} style={{ flex: 1, padding: 14, background: loadingDetails ? '#334155' : 'linear-gradient(135deg, #22c55e, #16a34a)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 15, cursor: loadingDetails ? 'default' : 'pointer', fontFamily: 'inherit' }}>
-                {loadingDetails ? '⏳ Fetching business details...' : `📦 Send ${selected.size} to Bulk Generator`}
-              </button>
-            </div>
+            <button onClick={handleAddSelected} disabled={loadingDetails} style={{ marginTop: 12, width: '100%', padding: 14, background: loadingDetails ? '#334155' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 15, cursor: loadingDetails ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+              {loadingDetails ? '⏳ Fetching business details...' : `➕ Add ${selected.size} Business${selected.size > 1 ? 'es' : ''} to Leads`}
+            </button>
           )}
         </div>
       )}
@@ -241,7 +235,7 @@ function SearchPanel({ onAddToLeads, onSendToBulk, onGoToBulk }) {
 }
 
 // ── Main AdminForm ────────────────────────────────────────────────────────────
-export default function AdminForm({ business, onChange, onPreview, onGoToLeads, onSendToBulk, onGoToBulk }) {
+export default function AdminForm({ business, onChange, onPreview, onGoToLeads }) {
   const [activeTab, setActiveTab] = useState('basics')
   const [copied, setCopied] = useState(false)
   const [subdomain, setSubdomain] = useState(() => generateSubdomainFromName(business.name))
@@ -381,7 +375,7 @@ export default function AdminForm({ business, onChange, onPreview, onGoToLeads, 
         </div>
 
         {/* Google Search Panel */}
-        <SearchPanel onAddToLeads={handleAddToLeads} onSendToBulk={onSendToBulk} onGoToBulk={onGoToBulk} />
+        <SearchPanel onAddToLeads={handleAddToLeads} />
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
