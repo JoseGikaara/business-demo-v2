@@ -48,6 +48,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
   const [toast, setToast] = useState(false)
   const [copied, setCopied] = useState(false)
   const [deploymentInfo, setDeploymentInfo] = useState(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -620,6 +621,7 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
           .db-inner-pad { padding: 16px !important; }
           .db-hide-mobile { display: none !important; }
           .db-table { font-size: 13px !important; }
+          .db-header button:first-child { display: flex !important; }
         }
 
         @media (max-width: 400px) {
@@ -628,6 +630,11 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
       `}</style>
       <div className="db-header" style={{height:'64px', background:'#0f172a', borderBottom:'1px solid #1e293b', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 24px', position:'sticky', top:0, zIndex:100}}>
         <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+          <button onClick={() => setMobileMenuOpen(o => !o)} style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:10, width:44, height:44, alignItems:'center', justifyContent:'center', cursor:'pointer', flexDirection:'column', gap:5, padding:'12px', display:'none'}}>
+            <div style={{width:18, height:2, background:'#fff', borderRadius:2, transition:'all 0.3s', transform:mobileMenuOpen?'rotate(45deg) translate(5px,5px)':'none'}} />
+            <div style={{width:18, height:2, background:'#fff', borderRadius:2, transition:'all 0.3s', opacity:mobileMenuOpen?0:1}} />
+            <div style={{width:18, height:2, background:'#fff', borderRadius:2, transition:'all 0.3s', transform:mobileMenuOpen?'rotate(-45deg) translate(5px,-5px)':'none'}} />
+          </button>
           <span style={{color:'#fff', fontSize:'20px', fontWeight:'600'}}>{business?.name || 'Business Dashboard'}</span>
         </div>
         {onBack && (
@@ -636,6 +643,19 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
           </button>
         )}
       </div>
+
+      {/* Mobile fullscreen menu */}
+      <div style={{maxHeight:mobileMenuOpen?600:0, overflow:'hidden', transition:'max-height 0.4s ease', background:'rgba(2,6,23,0.99)', position:'absolute', top:'64px', left:0, right:0, zIndex:150}}>
+        <div style={{padding:'8px 20px 40px', display:'flex', flexDirection:'column'}}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false) }}
+              style={{width:'100%', padding:'12px 20px', background:activeTab===tab.id?'linear-gradient(135deg, #0ea5e9, #06b6d4)':'transparent', border:'none', borderRadius:'8px', color:activeTab===tab.id?'#fff':'#94a3b8', cursor:'pointer', fontSize:'14px', fontWeight:'500', textAlign:'left', display:'flex', alignItems:'center', gap:'10px', marginBottom:'4px'}}>
+              <span>{tab.icon}</span> {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="db-layout">
         <div className="db-sidebar">
           {tabs.map(tab => (
@@ -652,13 +672,9 @@ export default function BusinessDashboard({ business, onBack, onEditSite, isClie
       </div>
       <div className="db-bottom-nav">
         {[
-          { id:'overview', icon:'📊', label:'Home' },
-          { id:'customers', icon:'👥', label:'Clients' },
-          { id:'loyalty', icon:'⭐', label:'Loyalty' },
-          { id:'membership', icon:'💳', label:'Members' },
-          { id:'referrals', icon:'🔗', label:'Referrals' },
-          { id:'broadcast', icon:'📢', label:'Broadcast' },
-          { id:'upgrade', icon:'🚀', label:'Upgrade' },
+          { id:'membership', icon:'💎', label:'Members' },
+          { id:'gmb', icon:'📍', label:'GMB' },
+          { id:'social', icon:'📱', label:'Social' },
         ].map(tab => (
           <div key={tab.id} onClick={() => setActiveTab(tab.id)} style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'2px', cursor:'pointer', padding:'4px 0', position:'relative'}}>
             {activeTab === tab.id && <div style={{position:'absolute', top:0, width:4, height:4, borderRadius:'50%', background:'#0ea5e9'}} />}
