@@ -172,7 +172,6 @@ export async function ensureUniqueSubdomain(base) {
 export async function saveDeploymentSite({ businessName, fullUrl, phone, whatsapp, category, address }) {
   if (!supabase) return { error: 'Supabase not configured', data: null }
 
-  // Step 1 — save to demo_sites
   const base = String(businessName || 'demo')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -188,8 +187,7 @@ export async function saveDeploymentSite({ businessName, fullUrl, phone, whatsap
 
   if (siteError) return { data: null, error: siteError }
 
-  // Step 2 — upsert into leads using business_name as the key
-  const { data: leadData, error: leadError } = await supabase
+  const { error: leadError } = await supabase
     .from('leads')
     .upsert({
       business_name: businessName,
@@ -202,12 +200,10 @@ export async function saveDeploymentSite({ businessName, fullUrl, phone, whatsap
       status: 'demo_ready',
       built_at: new Date().toISOString(),
     }, { onConflict: 'business_name' })
-    .select()
-    .single()
 
   if (leadError) console.warn('[leads upsert]', leadError.message)
 
-  return { data: { site: siteData, lead: leadData }, error: null }
+  return { data: siteData, error: null }
 }
 
 export async function loadDeploymentByBusinessName(businessName) {
