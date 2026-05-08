@@ -245,30 +245,32 @@ export default function BulkGenerator({ onBack, initialLeads, onClearInitial }) 
   const [saveToSupabase, setSaveToSupabase] = useState(true)
 
   useEffect(() => {
-    if (initialLeads && initialLeads.length > 0) {
-      const fromLeads = initialLeads.map((lead, index) => {
-        const business = {
-          name: lead.name,
-          phone: lead.phone,
-          whatsapp: lead.whatsapp,
-          category: lead.category || 'general',
-          address: lead.address || '',
-          website: lead.website || '',
-          tagline: SUPPORTED_CATEGORIES[lead.category]?.tagline || 'Professional Services',
-          hours: SUPPORTED_CATEGORIES[lead.category]?.hours || 'Mon–Sat: 8AM–6PM',
-          about: SUPPORTED_CATEGORIES[lead.category]?.about || '',
-          primaryColor: SUPPORTED_CATEGORIES[lead.category]?.primaryColor || '#0ea5e9',
-          accentColor: SUPPORTED_CATEGORIES[lead.category]?.accentColor || '#06b6d4',
-          showBooking: SUPPORTED_CATEGORIES[lead.category]?.showBooking ?? true,
-          services: SUPPORTED_CATEGORIES[lead.category]?.services || [],
-          badge: lead.category || 'general',
-        }
-        return buildItem(`imported-${Date.now()}-${index}`, business)
-      })
-      setBusinessItems(fromLeads)
-      onClearInitial()
-    }
-  }, [initialLeads, onClearInitial])
+    if (!initialLeads || initialLeads.length === 0) return
+    const fromLeads = initialLeads.map((lead, index) => {
+      const cat = (lead.category || 'salon').toLowerCase()
+      const defaults = SUPPORTED_CATEGORIES[cat] || SUPPORTED_CATEGORIES['salon']
+      const business = {
+        name: lead.name || '',
+        phone: lead.phone || '',
+        whatsapp: lead.whatsapp || lead.phone?.replace(/\D/g, '') || '',
+        category: cat,
+        address: lead.address || '',
+        website: lead.website || '',
+        tagline: defaults.tagline,
+        hours: defaults.hours,
+        about: defaults.about,
+        primaryColor: defaults.primaryColor,
+        accentColor: defaults.accentColor,
+        showBooking: defaults.showBooking,
+        services: defaults.services,
+        badge: cat,
+      }
+      return buildItem(`imported-${Date.now()}-${index}`, business)
+    })
+    setBusinessItems(fromLeads)
+    setStatus(`${fromLeads.length} businesses loaded from search — ready to generate`)
+    if (onClearInitial) onClearInitial()
+  }, [initialLeads])
 
   const handleVercelUrlChange = (e) => {
     const value = e.target.value

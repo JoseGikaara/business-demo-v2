@@ -93,8 +93,7 @@ export default function App() {
             onPreview={() => setView('demo')}
             onBulk={() => setView('bulk')}
             onGoToLeads={() => setView('leads')}
-            onSendToBulk={setPendingBulkLeads}
-            onGoToBulk={() => setView('bulk')}
+            onSendToBulk={(leads) => { setPendingBulkLeads(leads); setView('bulk') }}
           />
         )}
         {view === 'bulk' && <BulkGenerator onBack={() => setView('admin')} initialLeads={pendingBulkLeads} onClearInitial={() => setPendingBulkLeads([])} />}

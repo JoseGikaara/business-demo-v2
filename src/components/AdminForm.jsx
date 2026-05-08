@@ -109,8 +109,9 @@ const card = { background: '#1e293b', borderRadius: 12, padding: 24, marginBotto
 const cardTitle = { fontSize: 16, fontWeight: 700, color: '#f1f5f9', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid #334155' }
 
 // ── Google Search + Queue Panel ───────────────────────────────────────────────
-function SearchPanel({ onAddToLeads }) {
-  const [query, setQuery] = useState('')
+function SearchPanel({ onAddToLeads, onSendToBulk }) {
+  const [businessType, setBusinessType] = useState('')
+  const [location, setLocation] = useState('')
   const [results, setResults] = useState([])
   const [selected, setSelected] = useState(new Set())
   const [searching, setSearching] = useState(false)
@@ -119,7 +120,8 @@ function SearchPanel({ onAddToLeads }) {
   const [added, setAdded] = useState(0)
 
   const handleSearch = async () => {
-    if (!query.trim()) return
+    if (!businessType.trim() || !location.trim()) return
+    const query = `${businessType.trim()} in ${location.trim()}`
     setSearching(true); setError(''); setResults([]); setSelected(new Set())
     try {
       const data = await searchBusiness(query)
@@ -176,11 +178,26 @@ function SearchPanel({ onAddToLeads }) {
       </div>
 
       {/* Search bar */}
-      <div style={{ display: 'flex', gap: 10 }}>
-        <input style={{ ...inp, flex: 1 }} value={query} onChange={e => setQuery(e.target.value)}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 0 }}>
+        <input
+          style={{ ...inp, flex: 2 }}
+          value={businessType}
+          onChange={e => setBusinessType(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          placeholder="e.g. salons Westlands Nairobi  or  restaurants Karen" />
-        <button onClick={handleSearch} disabled={searching} style={{ background: searching ? '#334155' : 'linear-gradient(135deg, #0ea5e9, #06b6d4)', border: 'none', borderRadius: 8, padding: '10px 22px', color: '#fff', fontWeight: 700, fontSize: 14, cursor: searching ? 'default' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
+          placeholder="Business type e.g. barbershop, salon, clinic"
+        />
+        <input
+          style={{ ...inp, flex: 1 }}
+          value={location}
+          onChange={e => setLocation(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          placeholder="Location e.g. Westlands, Mombasa"
+        />
+        <button
+          onClick={handleSearch}
+          disabled={searching || !businessType.trim() || !location.trim()}
+          style={{ background: (searching || !businessType.trim() || !location.trim()) ? '#334155' : 'linear-gradient(135deg, #0ea5e9, #06b6d4)', border: 'none', borderRadius: 8, padding: '10px 22px', color: '#fff', fontWeight: 700, fontSize: 14, cursor: (searching || !businessType.trim() || !location.trim()) ? 'default' : 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}
+        >
           {searching ? '⏳ Searching...' : '🔍 Search'}
         </button>
       </div>
@@ -224,9 +241,40 @@ function SearchPanel({ onAddToLeads }) {
 
           {/* Add button */}
           {selected.size > 0 && (
-            <button onClick={handleAddSelected} disabled={loadingDetails} style={{ marginTop: 12, width: '100%', padding: 14, background: loadingDetails ? '#334155' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 15, cursor: loadingDetails ? 'default' : 'pointer', fontFamily: 'inherit' }}>
-              {loadingDetails ? '⏳ Fetching business details...' : `➕ Add ${selected.size} Business${selected.size > 1 ? 'es' : ''} to Leads`}
-            </button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+              <button
+                onClick={handleAddSelected}
+                disabled={loadingDetails}
+                style={{ flex: 1, padding: 14, background: loadingDetails ? '#334155' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 15, cursor: loadingDetails ? 'default' : 'pointer', fontFamily: 'inherit' }}
+              >
+                {loadingDetails ? '⏳ Fetching details...' : `➕ Add ${selected.size} to Leads`}
+              </button>
+              <button
+                onClick={async () => {
+                  const toAdd = results.filter(p => selected.has(p.place_id))
+                  if (!toAdd.length) return
+                  setLoadingDetails(true); setError('')
+                  try {
+                    const leads = []
+                    for (const place of toAdd) {
+                      try {
+                        const detail = await getPlaceDetails(place.place_id)
+                        leads.push(placeToLead(detail?.result || detail || place))
+                      } catch {
+                        leads.push(placeToLead(place))
+                      }
+                    }
+                    onSendToBulk(leads)
+                  } catch (e) {
+                    setError('Failed to load details: ' + e.message)
+                  } finally { setLoadingDetails(false) }
+                }}
+                disabled={loadingDetails}
+                style={{ flex: 1, padding: 14, background: loadingDetails ? '#334155' : 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 15, cursor: loadingDetails ? 'default' : 'pointer', fontFamily: 'inherit' }}
+              >
+                {loadingDetails ? '⏳ Fetching details...' : `⚡ Generate ${selected.size} Sites`}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -235,7 +283,7 @@ function SearchPanel({ onAddToLeads }) {
 }
 
 // ── Main AdminForm ────────────────────────────────────────────────────────────
-export default function AdminForm({ business, onChange, onPreview, onGoToLeads }) {
+export default function AdminForm({ business, onChange, onPreview, onGoToLeads, onSendToBulk }) {
   const [activeTab, setActiveTab] = useState('basics')
   const [copied, setCopied] = useState(false)
   const [subdomain, setSubdomain] = useState(() => generateSubdomainFromName(business.name))
@@ -375,7 +423,7 @@ export default function AdminForm({ business, onChange, onPreview, onGoToLeads }
         </div>
 
         {/* Google Search Panel */}
-        <SearchPanel onAddToLeads={handleAddToLeads} />
+        <SearchPanel onAddToLeads={handleAddToLeads} onSendToBulk={onSendToBulk} />
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
