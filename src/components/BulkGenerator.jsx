@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { buildShareableURL } from '../App'
 import { saveDeploymentSite as saveDemoSite } from '../lib/demoSites'
 
@@ -235,7 +235,7 @@ function buildItem(id, business) {
   }
 }
 
-export default function BulkGenerator() {
+export default function BulkGenerator({ onBack, initialLeads, onClearInitial }) {
   const [vercelUrl, setVercelUrl] = useState(() => localStorage.getItem('vercelUrl') || window.location.origin)
   const [inputMode, setInputMode] = useState('gmb')
   const [inputText, setInputText] = useState('')
@@ -243,6 +243,32 @@ export default function BulkGenerator() {
   const [status, setStatus] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [saveToSupabase, setSaveToSupabase] = useState(true)
+
+  useEffect(() => {
+    if (initialLeads && initialLeads.length > 0) {
+      const fromLeads = initialLeads.map((lead, index) => {
+        const business = {
+          name: lead.name,
+          phone: lead.phone,
+          whatsapp: lead.whatsapp,
+          category: lead.category || 'general',
+          address: lead.address || '',
+          website: lead.website || '',
+          tagline: SUPPORTED_CATEGORIES[lead.category]?.tagline || 'Professional Services',
+          hours: SUPPORTED_CATEGORIES[lead.category]?.hours || 'Mon–Sat: 8AM–6PM',
+          about: SUPPORTED_CATEGORIES[lead.category]?.about || '',
+          primaryColor: SUPPORTED_CATEGORIES[lead.category]?.primaryColor || '#0ea5e9',
+          accentColor: SUPPORTED_CATEGORIES[lead.category]?.accentColor || '#06b6d4',
+          showBooking: SUPPORTED_CATEGORIES[lead.category]?.showBooking ?? true,
+          services: SUPPORTED_CATEGORIES[lead.category]?.services || [],
+          badge: lead.category || 'general',
+        }
+        return buildItem(`imported-${Date.now()}-${index}`, business)
+      })
+      setBusinessItems(fromLeads)
+      onClearInitial()
+    }
+  }, [initialLeads, onClearInitial])
 
   const handleVercelUrlChange = (e) => {
     const value = e.target.value

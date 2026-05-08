@@ -75,6 +75,7 @@ export default function App() {
 
   const [view, setView] = useState('admin')
   const [business, setBusiness] = useState(urlBusiness || defaultBusiness)
+  const [pendingBulkLeads, setPendingBulkLeads] = useState([])
 
   if (isDemo && urlBusiness) {
     return <SharedDemoWrapper business={urlBusiness} />
@@ -92,9 +93,11 @@ export default function App() {
             onPreview={() => setView('demo')}
             onBulk={() => setView('bulk')}
             onGoToLeads={() => setView('leads')}
+            onSendToBulk={setPendingBulkLeads}
+            onGoToBulk={() => setView('bulk')}
           />
         )}
-        {view === 'bulk' && <BulkGenerator onBack={() => setView('admin')} />}
+        {view === 'bulk' && <BulkGenerator onBack={() => setView('admin')} initialLeads={pendingBulkLeads} onClearInitial={() => setPendingBulkLeads([])} />}
         {view === 'demo' && (
           <DemoSite business={business} onBack={() => setView('admin')} isSharedView={false} isDemo={false} onDashboard={() => setView('dashboard')} />
         )}
