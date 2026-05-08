@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { buildShareableURL } from '../App'
 import { saveDeploymentSite as saveDemoSite } from '../lib/demoSites'
 
@@ -235,7 +235,7 @@ function buildItem(id, business) {
   }
 }
 
-export default function BulkGenerator() {
+export default function BulkGenerator({ onBack, initialLeads = [], onClearInitial }) {
   const [vercelUrl, setVercelUrl] = useState(() => localStorage.getItem('vercelUrl') || window.location.origin)
   const [inputMode, setInputMode] = useState('gmb')
   const [inputText, setInputText] = useState('')
@@ -243,6 +243,33 @@ export default function BulkGenerator() {
   const [status, setStatus] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [saveToSupabase, setSaveToSupabase] = useState(true)
+  useEffect(() => {
+    if (!initialLeads || initialLeads.length === 0) return
+    const fromLeads = initialLeads.map((lead, index) => {
+      const cat = (lead.category || 'salon').toLowerCase()
+      const defaults = SUPPORTED_CATEGORIES[cat] || SUPPORTED_CATEGORIES['salon']
+      const business = {
+        name: lead.name || '',
+        phone: lead.phone || '',
+        whatsapp: lead.whatsapp || (lead.phone || '').replace(/\D/g, ''),
+        category: cat,
+        address: lead.address || '',
+        website: lead.website || '',
+        tagline: defaults.tagline,
+        hours: defaults.hours,
+        about: defaults.about,
+        primaryColor: defaults.primaryColor,
+        accentColor: defaults.accentColor,
+        showBooking: defaults.showBooking,
+        services: defaults.services,
+        badge: cat,
+      }
+      return buildItem(`imported-${Date.now()}-${index}`, business)
+    })
+    setBusinessItems(fromLeads)
+    setStatus(`${fromLeads.length} businesses loaded from search — click Start Bulk Generation`)
+    if (onClearInitial) onClearInitial()
+  }, [initialLeads])
 
   const handleVercelUrlChange = (e) => {
     const value = e.target.value
@@ -270,14 +297,6 @@ export default function BulkGenerator() {
     return buildShareableURL(business).replace(window.location.origin, vercelUrl)
   }
 
-  const withTimeout = (promise, ms) =>
-    Promise.race([
-      promise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`Timed out after ${ms / 1000}s`)), ms)
-      )
-    ])
-
   const processItem = async (item) => {
     if (item.status === 'success') return item
 
@@ -298,6 +317,7 @@ export default function BulkGenerator() {
       address: item.business.address || '',
     }
 
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), ms))])
     const { data, error } = await withTimeout(saveDemoSite(payload), 10000)
 
     if (error) {

@@ -96,7 +96,13 @@ export default function App() {
             onSendToBulk={(leads) => { setPendingBulkLeads(leads); setView('bulk') }}
           />
         )}
-        {view === 'bulk' && <BulkGenerator onBack={() => setView('admin')} initialLeads={pendingBulkLeads} onClearInitial={() => setPendingBulkLeads([])} />}
+        {view === 'bulk' && (
+          <BulkGenerator
+            onBack={() => setView('admin')}
+            initialLeads={pendingBulkLeads}
+            onClearInitial={() => setPendingBulkLeads([])}
+          />
+        )}
         {view === 'demo' && (
           <DemoSite business={business} onBack={() => setView('admin')} isSharedView={false} isDemo={false} onDashboard={() => setView('dashboard')} />
         )}

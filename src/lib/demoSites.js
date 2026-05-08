@@ -209,10 +209,17 @@ export async function saveDeploymentSite({ businessName, fullUrl, phone, whatsap
 export async function loadDeploymentByBusinessName(businessName) {
   if (!supabase) return { data: null, error: 'Supabase not configured' }
 
+  // demo_sites has no business_name column — look up via slug derived from name
+  const base = String(businessName || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 40)
+
   const { data, error } = await supabase
     .from('demo_sites')
     .select('*')
-    .ilike('business_name', businessName)
+    .ilike('slug', `${base}%`)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
