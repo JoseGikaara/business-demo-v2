@@ -169,24 +169,45 @@ export async function ensureUniqueSubdomain(base) {
   return `${base}-${Math.floor(Math.random() * 900 + 100)}`
 }
 
-export async function saveDeploymentSite({ leadId, businessName, fullUrl }) {
+export async function saveDeploymentSite({ businessName, fullUrl, phone, whatsapp, category, address }) {
   if (!supabase) return { error: 'Supabase not configured', data: null }
 
-  // generate a unique slug from business name
-  const base = String(businessName || '')
+  // Step 1 — save to demo_sites
+  const base = String(businessName || 'demo')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-    .slice(0, 40) || 'demo'
+    .slice(0, 40)
   const slug = `${base}-${Math.random().toString(36).slice(2, 7)}`
 
-  const { data, error } = await supabase
-    .from('generated_sites')
-    .insert({ slug, full_url: fullUrl, status: 'active' })
+  const { data: siteData, error: siteError } = await supabase
+    .from('demo_sites')
+    .insert({ id: slug, slug, full_url: fullUrl, status: 'active' })
     .select()
     .single()
 
-  return { data, error }
+  if (siteError) return { data: null, error: siteError }
+
+  // Step 2 — upsert into leads using business_name as the key
+  const { data: leadData, error: leadError } = await supabase
+    .from('leads')
+    .upsert({
+      business_name: businessName,
+      phone: phone || '',
+      whatsapp: whatsapp || '',
+      category: category || '',
+      address: address || '',
+      demo_url: fullUrl,
+      short_url: fullUrl,
+      status: 'demo_ready',
+      built_at: new Date().toISOString(),
+    }, { onConflict: 'business_name' })
+    .select()
+    .single()
+
+  if (leadError) console.warn('[leads upsert]', leadError.message)
+
+  return { data: { site: siteData, lead: leadData }, error: null }
 }
 
 export async function loadDeploymentByBusinessName(businessName) {

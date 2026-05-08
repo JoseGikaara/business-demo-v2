@@ -298,7 +298,7 @@ export default function BulkGenerator({ onBack, initialLeads, onClearInitial }) 
     Promise.race([
       promise,
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Save timed out after 10s')), ms)
+        setTimeout(() => reject(new Error(`Timed out after ${ms / 1000}s`)), ms)
       )
     ])
 
@@ -314,9 +314,12 @@ export default function BulkGenerator({ onBack, initialLeads, onClearInitial }) 
     }
 
     const payload = {
-      leadId: null,
       businessName: item.business.name,
       fullUrl: link,
+      phone: item.business.phone || '',
+      whatsapp: item.business.whatsapp || '',
+      category: item.business.category || '',
+      address: item.business.address || '',
     }
 
     const { data, error } = await withTimeout(saveDemoSite(payload), 10000)
