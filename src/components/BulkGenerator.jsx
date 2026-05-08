@@ -270,6 +270,14 @@ export default function BulkGenerator() {
     return buildShareableURL(business).replace(window.location.origin, vercelUrl)
   }
 
+  const withTimeout = (promise, ms) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Timed out after ${ms / 1000}s`)), ms)
+      )
+    ])
+
   const processItem = async (item) => {
     if (item.status === 'success') return item
 
@@ -290,7 +298,6 @@ export default function BulkGenerator() {
       address: item.business.address || '',
     }
 
-    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), ms))])
     const { data, error } = await withTimeout(saveDemoSite(payload), 10000)
 
     if (error) {
