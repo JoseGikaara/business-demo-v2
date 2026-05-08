@@ -169,23 +169,20 @@ export async function ensureUniqueSubdomain(base) {
   return `${base}-${Math.floor(Math.random() * 900 + 100)}`
 }
 
-export async function saveDeploymentSite({ leadId, businessName, phone, category, fullUrl, shortUrl, subdomain, staticHtml, deploymentStatus = 'pending' }) {
+export async function saveDeploymentSite({ leadId, businessName, fullUrl }) {
   if (!supabase) return { error: 'Supabase not configured', data: null }
 
+  // generate a unique slug from business name
+  const base = String(businessName || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 40) || 'demo'
+  const slug = `${base}-${Math.random().toString(36).slice(2, 7)}`
+
   const { data, error } = await supabase
-    .from('demo_sites')
-    .insert({
-      lead_id: leadId || null,
-      business_name: businessName,
-      phone: phone || '',
-      category: category || '',
-      full_url: fullUrl,
-      short_url: shortUrl || '',
-      subdomain,
-      static_html: staticHtml || '',
-      deployment_status: deploymentStatus,
-      deployed_at: deploymentStatus === 'deployed' ? new Date().toISOString() : null,
-    })
+    .from('generated_sites')
+    .insert({ slug, full_url: fullUrl, status: 'active' })
     .select()
     .single()
 

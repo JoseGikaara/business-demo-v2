@@ -294,9 +294,13 @@ export default function BulkGenerator({ onBack, initialLeads, onClearInitial }) 
     setBusinessItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...changes } : item)))
   }
 
-  const buildShareUrl = (business) => {
-    return buildShareableURL(business).replace(window.location.origin, vercelUrl)
-  }
+  const withTimeout = (promise, ms) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Save timed out after 10s')), ms)
+      )
+    ])
 
   const processItem = async (item) => {
     if (item.status === 'success') return item
@@ -312,13 +316,10 @@ export default function BulkGenerator({ onBack, initialLeads, onClearInitial }) 
     const payload = {
       leadId: null,
       businessName: item.business.name,
-      phone: item.business.phone,
-      category: item.business.category,
       fullUrl: link,
-      shortUrl: link,
     }
 
-    const { data, error } = await saveDemoSite(payload)
+    const { data, error } = await withTimeout(saveDemoSite(payload), 10000)
 
     if (error) {
       if (item.attempts < MAX_RETRIES) {
