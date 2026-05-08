@@ -49,23 +49,64 @@ const LeadManager = ({ onBack }) => {
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const savedLeads = localStorage.getItem('demobuilder_leads');
     const savedTeam = localStorage.getItem('demobuilder_team');
-    if (savedLeads) setLeads(JSON.parse(savedLeads).map(normalizeLead));
     if (savedTeam) setTeam(JSON.parse(savedTeam));
-    loadSites();
+    loadLeadsFromSupabase();
   }, []);
 
-  const loadSites = async () => {
-    const { data, error } = await supabase.from('demo_sites').select('*').order('created_at', { ascending: false });
-    if (!error) setSites(data || []);
+  const loadLeadsFromSupabase = async () => {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[leads load]', error.message); return; }
+    const mapped = (data || []).map(row => normalizeLead({
+      id: row.id,
+      name: row.business_name,
+      phone: row.phone || '',
+      whatsapp: row.whatsapp || '',
+      category: row.category || '',
+      address: row.address || '',
+      facebookUrl: row.facebook_url || '',
+      instagramUrl: row.instagram_url || '',
+      status: row.status || 'new',
+      assignedTo: row.assigned_to || '',
+      demoUrl: row.demo_url || '',
+      shortUrl: row.short_url || '',
+      notes: row.notes || '',
+      createdAt: row.created_at,
+      builtAt: row.built_at,
+    }));
+    setLeads(mapped);
   };
 
-  // Save leads to localStorage
+  const loadSites = loadLeadsFromSupabase;
+
+  // Save leads — update state and persist changed lead to Supabase
   const saveLeads = (updatedLeads) => {
     const normalized = updatedLeads.map(normalizeLead);
     setLeads(normalized);
-    localStorage.setItem('demobuilder_leads', JSON.stringify(normalized));
+  };
+
+  // Persist a single lead's changes to Supabase
+  const persistLead = async (lead) => {
+    if (!lead.id) return;
+    await supabase.from('leads').upsert({
+      id: lead.id,
+      business_name: lead.name,
+      phone: lead.phone || '',
+      whatsapp: lead.whatsapp || '',
+      category: lead.category || '',
+      address: lead.address || '',
+      facebook_url: lead.facebookUrl || '',
+      instagram_url: lead.instagramUrl || '',
+      status: lead.status || 'new',
+      assigned_to: lead.assignedTo || '',
+      demo_url: lead.demoUrl || '',
+      short_url: lead.shortUrl || '',
+      notes: lead.notes || '',
+      built_at: lead.builtAt || null,
+    }, { onConflict: 'id' });
   };
 
   // Save team to localStorage
@@ -298,6 +339,8 @@ const LeadManager = ({ onBack }) => {
       lead.id === id ? normalizeLead({ ...lead, ...updates }) : lead
     );
     saveLeads(updated);
+    const changedLead = updated.find(l => l.id === id);
+    if (changedLead) persistLead(changedLead);
   };
 
   // Delete lead
