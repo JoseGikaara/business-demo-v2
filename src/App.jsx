@@ -8,19 +8,28 @@ import BusinessDashboard from './components/BusinessDashboard'
 
 function getBusinessFromURL() {
   try {
+    // Check query param first (?d=...) — survives WhatsApp link sharing
+    const qParams = new URLSearchParams(window.location.search)
+    const qData = qParams.get('d')
+    if (qData) {
+      const decoded = JSON.parse(decodeURIComponent(atob(qData)))
+      if (decoded.name) return decoded
+    }
+    // Fallback: legacy hash-based links (#d=...)
     const hash = window.location.hash.slice(1)
-    const params = new URLSearchParams(hash)
-    const data = params.get('d')
-    if (!data) return null
-    const decoded = JSON.parse(decodeURIComponent(atob(data)))
-    if (!decoded.name) return null
-    return decoded
+    const hParams = new URLSearchParams(hash)
+    const hData = hParams.get('d')
+    if (hData) {
+      const decoded = JSON.parse(decodeURIComponent(atob(hData)))
+      if (decoded.name) return decoded
+    }
+    return null
   } catch { return null }
 }
 
 export function buildShareableURL(business) {
   const encoded = btoa(encodeURIComponent(JSON.stringify(business)))
-  return `${window.location.origin}${window.location.pathname}#d=${encoded}`
+  return `${window.location.origin}${window.location.pathname}?d=${encoded}`
 }
 
 const defaultBusiness = {
@@ -71,7 +80,7 @@ function SharedDemoWrapper({ business }) {
 
 export default function App() {
   const urlBusiness = getBusinessFromURL()
-  const isDemo = window.location.hash.length > 1
+  const isDemo = new URLSearchParams(window.location.search).has('d') || window.location.hash.length > 1
 
   const [view, setView] = useState('admin')
   const [business, setBusiness] = useState(urlBusiness || defaultBusiness)
