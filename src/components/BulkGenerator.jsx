@@ -1,146 +1,146 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { buildShareableURL } from '../App'
 import { saveDeploymentSite as saveDemoSite } from '../lib/demoSites'
 
 const SUPPORTED_CATEGORIES = {
   salon: {
     tagline: 'Where Style Meets Luxury',
-    hours: 'Mon–Sat: 8AM–8PM | Sun: 10AM–6PM',
+    hours: 'MonÔÇôSat: 8AMÔÇô8PM | Sun: 10AMÔÇô6PM',
     about: "Nairobi's premier destination for hair, nails, and wellness. Our expert team brings international techniques and premium products to transform your look and rejuvenate your spirit.",
     primaryColor: '#0ea5e9',
     accentColor: '#06b6d4',
     showBooking: true,
     services: [
-      { name: 'Hair Styling', price: '1,500', desc: 'Cut, blow-dry, and professional styling by our expert stylists', icon: '✂️' },
-      { name: 'Manicure & Pedicure', price: '2,000', desc: 'Luxury nail care with premium polish and treatments', icon: '💅' },
-      { name: 'Facial Treatment', price: '3,500', desc: 'Deep cleansing and rejuvenating skin therapy', icon: '✨' },
-      { name: 'Massage Therapy', price: '4,000', desc: 'Full body relaxation and therapeutic massage sessions', icon: '🫧' },
+      { name: 'Hair Styling', price: '1,500', desc: 'Cut, blow-dry, and professional styling by our expert stylists', icon: 'Ô£é´©Å' },
+      { name: 'Manicure & Pedicure', price: '2,000', desc: 'Luxury nail care with premium polish and treatments', icon: '­ƒÆà' },
+      { name: 'Facial Treatment', price: '3,500', desc: 'Deep cleansing and rejuvenating skin therapy', icon: 'Ô£¿' },
+      { name: 'Massage Therapy', price: '4,000', desc: 'Full body relaxation and therapeutic massage sessions', icon: '­ƒ½º' },
     ]
   },
   barbershop: {
     tagline: 'Classic Cuts & Modern Style',
-    hours: 'Mon–Sat: 9AM–7PM | Sun: Closed',
+    hours: 'MonÔÇôSat: 9AMÔÇô7PM | Sun: Closed',
     about: 'Traditional barbering meets contemporary grooming. From classic haircuts to modern beard styling, we deliver precision and style for the discerning gentleman.',
     primaryColor: '#1e40af',
     accentColor: '#3b82f6',
     showBooking: true,
     services: [
-      { name: 'Haircut & Shave', price: '1,200', desc: 'Professional haircut with hot towel shave', icon: '✂️' },
-      { name: 'Beard Trim', price: '800', desc: 'Expert beard shaping and trimming', icon: '🪒' },
-      { name: 'Hair Styling', price: '600', desc: 'Modern styling with premium products', icon: '💇‍♂️' },
-      { name: 'Head Massage', price: '500', desc: 'Relaxing scalp massage during service', icon: '🫧' },
+      { name: 'Haircut & Shave', price: '1,200', desc: 'Professional haircut with hot towel shave', icon: 'Ô£é´©Å' },
+      { name: 'Beard Trim', price: '800', desc: 'Expert beard shaping and trimming', icon: '­ƒ¬Æ' },
+      { name: 'Hair Styling', price: '600', desc: 'Modern styling with premium products', icon: '­ƒÆçÔÇìÔÖé´©Å' },
+      { name: 'Head Massage', price: '500', desc: 'Relaxing scalp massage during service', icon: '­ƒ½º' },
     ]
   },
   restaurant: {
     tagline: 'Flavors That Delight',
-    hours: 'Mon–Sun: 11AM–10PM',
+    hours: 'MonÔÇôSun: 11AMÔÇô10PM',
     about: 'Authentic cuisine with a modern twist. Fresh ingredients, creative presentations, and an atmosphere that makes every meal memorable.',
     primaryColor: '#dc2626',
     accentColor: '#ef4444',
     showBooking: true,
     services: [
-      { name: 'Lunch Special', price: '1,000', desc: 'Daily changing lunch menu with drink', icon: '🍽️' },
-      { name: 'Dinner for Two', price: '3,500', desc: 'Romantic dinner with wine pairing', icon: '🍷' },
-      { name: 'Family Platter', price: '5,000', desc: 'Large sharing platter for families', icon: '👨‍👩‍👧‍👦' },
-      { name: 'Catering Service', price: 'Contact', desc: 'Event catering with custom menus', icon: '🎉' },
+      { name: 'Lunch Special', price: '1,000', desc: 'Daily changing lunch menu with drink', icon: '­ƒì¢´©Å' },
+      { name: 'Dinner for Two', price: '3,500', desc: 'Romantic dinner with wine pairing', icon: '­ƒìÀ' },
+      { name: 'Family Platter', price: '5,000', desc: 'Large sharing platter for families', icon: '­ƒæ¿ÔÇì­ƒæ®ÔÇì­ƒæºÔÇì­ƒæª' },
+      { name: 'Catering Service', price: 'Contact', desc: 'Event catering with custom menus', icon: '­ƒÄë' },
     ]
   },
   plumber: {
     tagline: 'Reliable Plumbing Solutions',
-    hours: 'Mon–Sat: 8AM–6PM | Emergency: 24/7',
+    hours: 'MonÔÇôSat: 8AMÔÇô6PM | Emergency: 24/7',
     about: 'Professional plumbing services for residential and commercial properties. Fast response, quality work, and guaranteed satisfaction.',
     primaryColor: '#059669',
     accentColor: '#10b981',
     showBooking: false,
     services: [
-      { name: 'Pipe Repair', price: '2,000', desc: 'Fix leaking or broken pipes', icon: '🔧' },
-      { name: 'Drain Cleaning', price: '1,500', desc: 'Clear clogged drains and sewers', icon: '🚰' },
-      { name: 'Installation', price: '3,000', desc: 'Install new plumbing fixtures', icon: '🛠️' },
-      { name: 'Emergency Service', price: '4,000', desc: '24/7 emergency plumbing repairs', icon: '🚨' },
+      { name: 'Pipe Repair', price: '2,000', desc: 'Fix leaking or broken pipes', icon: '­ƒöº' },
+      { name: 'Drain Cleaning', price: '1,500', desc: 'Clear clogged drains and sewers', icon: '­ƒÜ░' },
+      { name: 'Installation', price: '3,000', desc: 'Install new plumbing fixtures', icon: '­ƒøá´©Å' },
+      { name: 'Emergency Service', price: '4,000', desc: '24/7 emergency plumbing repairs', icon: '­ƒÜ¿' },
     ]
   },
   electrician: {
     tagline: 'Powering Your Home',
-    hours: 'Mon–Sat: 8AM–6PM | Emergency: 24/7',
+    hours: 'MonÔÇôSat: 8AMÔÇô6PM | Emergency: 24/7',
     about: 'Certified electrical services for safe and efficient installations. From wiring to repairs, we handle all your electrical needs.',
     primaryColor: '#d97706',
     accentColor: '#f59e0b',
     showBooking: false,
     services: [
-      { name: 'Wiring Installation', price: '5,000', desc: 'Complete electrical wiring setup', icon: '⚡' },
-      { name: 'Outlet Repair', price: '1,000', desc: 'Fix faulty outlets and switches', icon: '🔌' },
-      { name: 'Lighting Installation', price: '2,500', desc: 'Install new lighting fixtures', icon: '💡' },
-      { name: 'Emergency Repair', price: '3,000', desc: '24/7 emergency electrical fixes', icon: '🚨' },
+      { name: 'Wiring Installation', price: '5,000', desc: 'Complete electrical wiring setup', icon: 'ÔÜí' },
+      { name: 'Outlet Repair', price: '1,000', desc: 'Fix faulty outlets and switches', icon: '­ƒöî' },
+      { name: 'Lighting Installation', price: '2,500', desc: 'Install new lighting fixtures', icon: '­ƒÆí' },
+      { name: 'Emergency Repair', price: '3,000', desc: '24/7 emergency electrical fixes', icon: '­ƒÜ¿' },
     ]
   },
   gym: {
     tagline: 'Build Your Strength',
-    hours: 'Mon–Fri: 5AM–10PM | Sat–Sun: 7AM–8PM',
+    hours: 'MonÔÇôFri: 5AMÔÇô10PM | SatÔÇôSun: 7AMÔÇô8PM',
     about: 'State-of-the-art fitness facility with expert trainers and modern equipment. Achieve your goals in a motivating environment.',
     primaryColor: '#7c3aed',
     accentColor: '#8b5cf6',
     showBooking: true,
     services: [
-      { name: 'Personal Training', price: '3,000', desc: 'One-on-one training sessions', icon: '🏋️' },
-      { name: 'Group Classes', price: '1,500', desc: 'Yoga, HIIT, and strength classes', icon: '🤸' },
-      { name: 'Membership', price: '5,000', desc: 'Monthly unlimited access', icon: '💳' },
-      { name: 'Nutrition Consult', price: '2,000', desc: 'Diet planning and advice', icon: '🥗' },
+      { name: 'Personal Training', price: '3,000', desc: 'One-on-one training sessions', icon: '­ƒÅï´©Å' },
+      { name: 'Group Classes', price: '1,500', desc: 'Yoga, HIIT, and strength classes', icon: '­ƒñ©' },
+      { name: 'Membership', price: '5,000', desc: 'Monthly unlimited access', icon: '­ƒÆ│' },
+      { name: 'Nutrition Consult', price: '2,000', desc: 'Diet planning and advice', icon: '­ƒÑù' },
     ]
   },
   clinic: {
     tagline: 'Caring for Your Health',
-    hours: 'Mon–Fri: 8AM–6PM | Sat: 9AM–2PM | Sun: Closed',
+    hours: 'MonÔÇôFri: 8AMÔÇô6PM | Sat: 9AMÔÇô2PM | Sun: Closed',
     about: 'Comprehensive healthcare services with experienced doctors and modern facilities. Your well-being is our priority.',
     primaryColor: '#be185d',
     accentColor: '#db2777',
     showBooking: true,
     services: [
-      { name: 'General Consultation', price: '1,500', desc: 'Comprehensive health check-up', icon: '👨‍⚕️' },
-      { name: 'Specialist Visit', price: '3,000', desc: 'Consultation with specialists', icon: '🩺' },
-      { name: 'Lab Tests', price: '2,000', desc: 'Blood work and diagnostics', icon: '🧪' },
-      { name: 'Vaccinations', price: '1,000', desc: 'Routine and travel vaccines', icon: '💉' },
+      { name: 'General Consultation', price: '1,500', desc: 'Comprehensive health check-up', icon: '­ƒæ¿ÔÇìÔÜò´©Å' },
+      { name: 'Specialist Visit', price: '3,000', desc: 'Consultation with specialists', icon: '­ƒ®║' },
+      { name: 'Lab Tests', price: '2,000', desc: 'Blood work and diagnostics', icon: '­ƒº¬' },
+      { name: 'Vaccinations', price: '1,000', desc: 'Routine and travel vaccines', icon: '­ƒÆë' },
     ]
   },
   cleaning: {
     tagline: 'Sparkling Clean Spaces',
-    hours: 'Mon–Sat: 7AM–7PM | Sun: 9AM–5PM',
+    hours: 'MonÔÇôSat: 7AMÔÇô7PM | Sun: 9AMÔÇô5PM',
     about: 'Professional cleaning services for homes and offices. Thorough, reliable, and eco-friendly cleaning solutions.',
     primaryColor: '#0d9488',
     accentColor: '#14b8a6',
     showBooking: false,
     services: [
-      { name: 'House Cleaning', price: '3,000', desc: 'Complete home deep cleaning', icon: '🧹' },
-      { name: 'Office Cleaning', price: '2,500', desc: 'Regular office maintenance', icon: '🏢' },
-      { name: 'Carpet Cleaning', price: '1,500', desc: 'Deep carpet and upholstery cleaning', icon: '🧽' },
-      { name: 'Window Cleaning', price: '1,000', desc: 'Streak-free window cleaning', icon: '🪟' },
+      { name: 'House Cleaning', price: '3,000', desc: 'Complete home deep cleaning', icon: '­ƒº╣' },
+      { name: 'Office Cleaning', price: '2,500', desc: 'Regular office maintenance', icon: '­ƒÅó' },
+      { name: 'Carpet Cleaning', price: '1,500', desc: 'Deep carpet and upholstery cleaning', icon: '­ƒº¢' },
+      { name: 'Window Cleaning', price: '1,000', desc: 'Streak-free window cleaning', icon: '­ƒ¬ƒ' },
     ]
   },
   photography: {
     tagline: 'Capturing Your Moments',
-    hours: 'Mon–Sat: 9AM–6PM | Sun: By Appointment',
+    hours: 'MonÔÇôSat: 9AMÔÇô6PM | Sun: By Appointment',
     about: 'Professional photography services for events, portraits, and commercial needs. Creative vision with stunning results.',
     primaryColor: '#7c2d12',
     accentColor: '#ea580c',
     showBooking: true,
     services: [
-      { name: 'Portrait Session', price: '5,000', desc: 'Professional headshots and portraits', icon: '📸' },
-      { name: 'Event Photography', price: '10,000', desc: 'Wedding and event coverage', icon: '🎉' },
-      { name: 'Product Photography', price: '3,000', desc: 'Commercial product shoots', icon: '📦' },
-      { name: 'Photo Editing', price: '1,000', desc: 'Post-production and retouching', icon: '🖼️' },
+      { name: 'Portrait Session', price: '5,000', desc: 'Professional headshots and portraits', icon: '­ƒô©' },
+      { name: 'Event Photography', price: '10,000', desc: 'Wedding and event coverage', icon: '­ƒÄë' },
+      { name: 'Product Photography', price: '3,000', desc: 'Commercial product shoots', icon: '­ƒôª' },
+      { name: 'Photo Editing', price: '1,000', desc: 'Post-production and retouching', icon: '­ƒû╝´©Å' },
     ]
   },
   hardware: {
     tagline: 'Your Home Improvement Store',
-    hours: 'Mon–Sat: 8AM–7PM | Sun: 10AM–4PM',
+    hours: 'MonÔÇôSat: 8AMÔÇô7PM | Sun: 10AMÔÇô4PM',
     about: 'Complete hardware store with tools, materials, and expert advice. Everything you need for your DIY projects and repairs.',
     primaryColor: '#374151',
     accentColor: '#6b7280',
     showBooking: false,
     services: [
-      { name: 'Tool Rental', price: '500', desc: 'Rent power tools and equipment', icon: '🔨' },
-      { name: 'Consultation', price: 'Free', desc: 'Expert advice on projects', icon: '🛠️' },
-      { name: 'Delivery Service', price: '1,000', desc: 'Home delivery of materials', icon: '🚚' },
-      { name: 'Installation Help', price: '2,000', desc: 'Professional installation assistance', icon: '⚙️' },
+      { name: 'Tool Rental', price: '500', desc: 'Rent power tools and equipment', icon: '­ƒö¿' },
+      { name: 'Consultation', price: 'Free', desc: 'Expert advice on projects', icon: '­ƒøá´©Å' },
+      { name: 'Delivery Service', price: '1,000', desc: 'Home delivery of materials', icon: '­ƒÜÜ' },
+      { name: 'Installation Help', price: '2,000', desc: 'Professional installation assistance', icon: 'ÔÜÖ´©Å' },
     ]
   }
 }
@@ -219,7 +219,7 @@ function createBusinessPayload(parts, mode) {
     socialImages: [],
     facebookUrl: facebookUrl || '',
     instagramUrl: instagramUrl || '',
-    badge: facebookUrl ? '📘 FB' : instagramUrl ? '📸 IG' : ''
+    badge: facebookUrl ? '­ƒôÿ FB' : instagramUrl ? '­ƒô© IG' : ''
   }
 }
 
@@ -267,7 +267,7 @@ export default function BulkGenerator({ onBack, initialLeads = [], onClearInitia
       return buildItem(`imported-${Date.now()}-${index}`, business)
     })
     setBusinessItems(fromLeads)
-    setStatus(`${fromLeads.length} businesses loaded from search — click Start Bulk Generation`)
+    setStatus(`${fromLeads.length} businesses loaded from search ÔÇö click Start Bulk Generation`)
     if (onClearInitial) onClearInitial()
   }, [initialLeads])
 
@@ -377,7 +377,7 @@ export default function BulkGenerator({ onBack, initialLeads = [], onClearInitia
   const copyAllWhatsApp = () => {
     const text = businessItems
       .filter((item) => item.link)
-      .map((item) => `*${item.business.name}* — ${item.link}`)
+      .map((item) => `*${item.business.name}* ÔÇö ${item.link}`)
       .join('\n')
     navigator.clipboard.writeText(text)
   }
@@ -450,7 +450,7 @@ export default function BulkGenerator({ onBack, initialLeads = [], onClearInitia
           disabled={!businessItems.length || isProcessing}
           style={{ backgroundColor: '#10b981', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: businessItems.length && !isProcessing ? 'pointer' : 'not-allowed' }}
         >
-          {isProcessing ? 'Processing queue…' : 'Start Bulk Generation'}
+          {isProcessing ? 'Processing queueÔÇª' : 'Start Bulk Generation'}
         </button>
         <button
           onClick={resetAll}
@@ -473,7 +473,7 @@ export default function BulkGenerator({ onBack, initialLeads = [], onClearInitia
         </label>
         {totalCount > 0 && (
           <div style={{ color: '#cbd5e1' }}>
-            {processedCount}/{totalCount} processed • {successCount} saved • {failedCount} failed
+            {processedCount}/{totalCount} processed ÔÇó {successCount} saved ÔÇó {failedCount} failed
           </div>
         )}
       </div>
@@ -507,7 +507,7 @@ export default function BulkGenerator({ onBack, initialLeads = [], onClearInitia
                 <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     <div style={{ fontSize: '1.05rem', fontWeight: 600 }}>{item.business.name}</div>
-                    <div style={{ color: '#94a3b8', marginTop: '4px' }}>{item.business.category} · {item.business.address}</div>
+                    <div style={{ color: '#94a3b8', marginTop: '4px' }}>{item.business.category} ┬À {item.business.address}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{ padding: '4px 10px', backgroundColor: '#0f172a', borderRadius: '999px', color: '#cbd5e1', fontSize: 12 }}>{item.business.badge || item.business.category}</span>

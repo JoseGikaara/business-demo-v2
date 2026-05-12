@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import Table from './ui/Table'
 import StatusBadge from './ui/StatusBadge'
@@ -19,7 +19,7 @@ async function shortenURL(longUrl) {
 
 function buildWhatsAppLink(business, shortUrl) {
   const message = encodeURIComponent(
-    `Hi ${business.name}! 👋\n\nI built a free demo website for your business — check it out here:\n👉 ${shortUrl}\n\nIt shows how your business could look online with features like:\n✅ Online booking\n✅ Customer reviews\n✅ Google Maps integration\n✅ Business hours & contact info\n\nThis is exactly what businesses in Nairobi are using to get more customers. Would you like to activate it? Takes 10 minutes. 🚀`
+    `Hi ${business.name}! ­ƒæï\n\nI built a free demo website for your business ÔÇö check it out here:\n­ƒæë ${shortUrl}\n\nIt shows how your business could look online with features like:\nÔ£à Online booking\nÔ£à Customer reviews\nÔ£à Google Maps integration\nÔ£à Business hours & contact info\n\nThis is exactly what businesses in Nairobi are using to get more customers. Would you like to activate it? Takes 10 minutes. ­ƒÜÇ`
   );
   return `https://wa.me/${business.phone}?text=${message}`;
 }
@@ -82,7 +82,7 @@ const LeadManager = ({ onBack }) => {
 
   const loadSites = loadLeadsFromSupabase;
 
-  // Save leads — update state and persist changed lead to Supabase
+  // Save leads ÔÇö update state and persist changed lead to Supabase
   const saveLeads = (updatedLeads) => {
     const normalized = updatedLeads.map(normalizeLead);
     setLeads(normalized);
@@ -543,7 +543,7 @@ const LeadManager = ({ onBack }) => {
             padding: '0',
           }}
         >
-          ←
+          ÔåÉ
         </button>
         <h1 style={{ margin: '0', fontSize: '28px', fontWeight: '700' }}>Lead Manager</h1>
       </div>
@@ -577,7 +577,7 @@ const LeadManager = ({ onBack }) => {
           </button>
           {bulkCount > 0 && (
             <span style={{ color: '#4ade80', fontWeight: '600' }}>
-              ✓ {bulkCount} leads parsed
+              Ô£ô {bulkCount} leads parsed
             </span>
           )}
         </div>
@@ -631,7 +631,7 @@ const LeadManager = ({ onBack }) => {
                   padding: '0',
                 }}
               >
-                ×
+                ├ù
               </button>
             </div>
           ))}
@@ -677,7 +677,7 @@ const LeadManager = ({ onBack }) => {
             onMouseOver={(e) => (e.target.style.backgroundColor = '#06b6d4')}
             onMouseOut={(e) => (e.target.style.backgroundColor = '#0ea5e9')}
           >
-            📥 Export Built Leads CSV
+            ­ƒôÑ Export Built Leads CSV
           </button>
         </div>
       </div>
@@ -857,7 +857,7 @@ const LeadManager = ({ onBack }) => {
           onMouseOver={(e) => (e.target.style.backgroundColor = '#06b6d4')}
           onMouseOut={(e) => (e.target.style.backgroundColor = '#0ea5e9')}
         >
-          🔗 Shorten All Built URLs
+          ­ƒöù Shorten All Built URLs
         </button>
         <span style={{ color: '#94a3b8', fontSize: '13px', alignSelf: 'center' }}>
           {leads.filter((l) => l.status === 'built' && l.demoUrl && !l.shortUrl).length} URLs to shorten
@@ -931,10 +931,10 @@ const LeadManager = ({ onBack }) => {
                     {lead.name}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'left', color: '#cbd5e1' }}>
-                    {lead.category || '—'}
+                    {lead.category || 'ÔÇö'}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'left', color: '#cbd5e1' }}>
-                    {lead.address || '—'}
+                    {lead.address || 'ÔÇö'}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'left' }}>
                     <span
@@ -1050,7 +1050,7 @@ const LeadManager = ({ onBack }) => {
                                 opacity: shorteningLeadId === lead.id ? 0.6 : 1,
                               }}
                             >
-                              {shorteningLeadId === lead.id ? '⟳' : '↻'}
+                              {shorteningLeadId === lead.id ? 'Ôƒ│' : 'Ôå╗'}
                             </button>
                           </div>
                         ) : (
@@ -1075,7 +1075,7 @@ const LeadManager = ({ onBack }) => {
                         )}
                       </div>
                     ) : (
-                      <span style={{ color: '#64748b' }}>—</span>
+                      <span style={{ color: '#64748b' }}>ÔÇö</span>
                     )}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
@@ -1145,7 +1145,7 @@ const LeadManager = ({ onBack }) => {
 
       {/* NOTES SECTION */}
       <div style={{ marginTop: '20px', fontSize: '12px', color: '#64748b' }}>
-        <p>💡 Tip: Click status chips at the top to filter by status | Select leads and bulk assign or mark dead</p>
+        <p>­ƒÆí Tip: Click status chips at the top to filter by status | Select leads and bulk assign or mark dead</p>
       </div>
     </div>
   );
