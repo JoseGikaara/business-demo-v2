@@ -6,7 +6,9 @@ const BASE = '/api/places'
 export async function searchBusinesses(query) {
   const res = await fetch(`${BASE}?endpoint=textsearch&query=${encodeURIComponent(query)}`)
   const data = await res.json()
-  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+  if (data.status === 'ZERO_RESULTS') return []
+  if (data.status !== 'OK') {
+    console.error('[Places] API error:', data.status, data.error_message)
     throw new Error(data.error_message || data.status || 'Places search failed')
   }
   return data.results || []
